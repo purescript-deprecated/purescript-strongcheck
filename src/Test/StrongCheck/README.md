@@ -1,6 +1,6 @@
 # Module Documentation
 
-## Module Test.QuickCheck.LCG
+## Module Test.StrongCheck.Gen
 
 ### Types
 
@@ -138,7 +138,7 @@
     vectorOf :: forall f a. (Monad f) => Number -> GenT f a -> GenT f [a]
 
 
-## Module Test.QuickCheck.Perturb
+## Module Test.StrongCheck.Perturb
 
 ### Types
 

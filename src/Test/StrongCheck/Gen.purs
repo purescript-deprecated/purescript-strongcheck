@@ -1,4 +1,4 @@
-module Test.QuickCheck.LCG
+module Test.StrongCheck.Gen
   ( GenT(..)
   , Gen(..)
   , GenState(..)

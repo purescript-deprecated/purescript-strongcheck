@@ -1,6 +1,6 @@
 {
-  "name": "purescript-quickcheck",
-  "version": "0.1.6",
+  "name": "purescript-strongcheck",
+  "version": "0.3.0",
   "license": "MIT",
   "authors": [
     "John A. De Goes <john@degoes.net> (http://degoes.net)",

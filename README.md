@@ -1,6 +1,6 @@
 # Module Documentation
 
-## Module Test.QuickCheck
+## Module Test.StrongCheck
 
 ### Types
 

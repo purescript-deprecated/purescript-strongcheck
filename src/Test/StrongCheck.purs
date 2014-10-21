@@ -1,4 +1,4 @@
-module Test.QuickCheck 
+module Test.StrongCheck
   ( (<?>)
   , AlphaNumString(..)
   , Arbitrary
@@ -53,7 +53,7 @@ import Math
 import qualified Data.String as S
 import Data.Char
 
-import Test.QuickCheck.LCG
+import Test.StrongCheck.Gen
 
 class Arbitrary t where
   arbitrary :: Gen t

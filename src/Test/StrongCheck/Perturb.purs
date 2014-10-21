@@ -1,4 +1,4 @@
-module Test.QuickCheck.Perturb 
+module Test.StrongCheck.Perturb 
   ( Attempts(..)
   , Perturb
   , perturb
@@ -8,8 +8,8 @@ module Test.QuickCheck.Perturb
   , searchIn
   ) where
 
-  import Test.QuickCheck.LCG
-  import Test.QuickCheck
+  import Test.StrongCheck.Gen
+  import Test.StrongCheck
   
   import Data.Traversable
   import Data.Foldable
@@ -219,8 +219,8 @@ module Test.QuickCheck.Perturb
   cardDims f = f cardinality
 
   -- workaround to avoid:
-  -- Attempted to unify a constrained type (Test.QuickCheck.Arbitrary u15286) => 
-  -- Test.QuickCheck.LCG.Gen<u15286> with another type.
+  -- Attempted to unify a constrained type (Test.StrongCheck.Arbitrary u15286) => 
+  -- Test.StrongCheck.Gen.Gen<u15286> with another type.
   cardPerturb1F :: forall a. (Arbitrary a) => a -> Number -> Cardinality a -> Gen a
   cardPerturb1F a n (Cardinality sz) = if n < 1 / (2 * sz) then pure a else arbitrary
 
