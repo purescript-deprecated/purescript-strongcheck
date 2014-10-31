@@ -35,6 +35,7 @@ module Test.StrongCheck.Gen
   , showSample' 
   , shuffle
   , shuffle'
+  , shuffleArray
   , sized 
   , stateful 
   , suchThat
@@ -388,17 +389,20 @@ chunked n g = transGen f [] (extend n g) where
 shuffle' :: forall f a. (Monad f) => Number -> GenT f a -> GenT f a
 shuffle' n g = 
   do  chunks   <- chunked n g
-      shuffled <- shuffle0 [] chunks
+      shuffled <- shuffleArray [] chunks
       allInArray shuffled
-
-  where shuffle0 acc [] = pure $ acc
-        shuffle0 acc xs = do i <- chooseInt 0 (A.length xs - 1)
-                             let acc' = acc <> (maybe [] (flip (:) []) (xs A.!! i))
-                             shuffle0 acc' (A.deleteAt i 1 xs)
 
 -- | Same as shuffle' but with default for the chunk size.
 shuffle :: forall f a. (Monad f) => GenT f a -> GenT f a
 shuffle = shuffle' 100
+
+-- | Creates a generator that produces shuffled versions of the provided array.
+shuffleArray :: forall f a. (Monad f) => [a] -> GenT f [a]
+shuffleArray = shuffle0 [] where 
+  shuffle0 acc []  = pure $ acc
+  shuffle0 acc xs  = do i <- chooseInt 0 (A.length xs - 1)
+                        let acc' = acc <> (maybe [] (flip (:) []) (xs A.!! i))
+                        shuffle0 acc' (A.deleteAt i 1 xs)
 
 instance semigroupGenState :: Semigroup GenState where
   (<>) (GenState a) (GenState b) = GenState { seed: perturbNum a.seed b.seed, size: b.size }
