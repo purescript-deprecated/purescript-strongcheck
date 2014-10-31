@@ -15,9 +15,9 @@
     data GenT f a where
       GenT :: Mealy.MealyT f GenState (GenOut a) -> GenT f a
 
-    type Seed  = Number
+    type Seed = Number
 
-    type Size  = Number
+    type Size = Number
 
 
 ### Type Class Instances
@@ -118,6 +118,8 @@
     shuffle :: forall f a. (Monad f) => GenT f a -> GenT f a
 
     shuffle' :: forall f a. (Monad f) => Number -> GenT f a -> GenT f a
+
+    shuffleArray :: forall f a. (Monad f) => [a] -> GenT f [a]
 
     sized :: forall f a. (Monad f) => (Size -> GenT f a) -> GenT f a
 

@@ -389,7 +389,7 @@ chunked n g = transGen f [] (extend n g) where
 shuffle' :: forall f a. (Monad f) => Number -> GenT f a -> GenT f a
 shuffle' n g = 
   do  chunks   <- chunked n g
-      shuffled <- shuffleArray [] chunks
+      shuffled <- shuffleArray chunks
       allInArray shuffled
 
 -- | Same as shuffle' but with default for the chunk size.
