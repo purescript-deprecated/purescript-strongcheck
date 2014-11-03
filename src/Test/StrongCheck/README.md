@@ -15,9 +15,9 @@
     data GenT f a where
       GenT :: Mealy.MealyT f GenState (GenOut a) -> GenT f a
 
-    type Seed = Number
+    type Seed  = Number
 
-    type Size = Number
+    type Size  = Number
 
 
 ### Type Class Instances
@@ -160,13 +160,7 @@
 
     instance perturbArray :: (Perturb a) => Perturb [a]
 
-    instance perturbArrayEnum :: (Enum a, Arbitrary a) => Perturb [a]
-
-    instance perturbEnumEither :: (Enum a, Enum b, Perturb b) => Perturb (FairEither a b)
-
-    instance perturbFairTuple :: (Enum a, Enum b, Perturb b) => Perturb (FairTuple a b)
-
-    instance perturbLastEnum :: (Enum a, Arbitrary a) => Perturb (LastEnum a)
+    instance perturbEnum :: (Enum a) => Perturb a
 
     instance perturbNumber :: Perturb Number
 

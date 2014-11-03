@@ -7,14 +7,8 @@
     newtype AlphaNumString where
       AlphaNumString :: String -> AlphaNumString
 
-    newtype FairEither a b where
-      FairEither :: Either a b -> FairEither a b
-
-    newtype FairTuple a b where
-      FairTuple :: Tuple a b -> FairTuple a b
-
-    newtype LastEnum a where
-      LastEnum :: a -> LastEnum a
+    newtype ArbEnum a where
+      ArbEnum :: a -> ArbEnum a
 
     newtype Negative where
       Negative :: Number -> Negative
@@ -51,6 +45,8 @@
 
     instance arbAlphaNumString :: Arbitrary AlphaNumString
 
+    instance arbArbEnum :: (Enum a) => Arbitrary (ArbEnum a)
+
     instance arbArray :: (Arbitrary a) => Arbitrary [a]
 
     instance arbBoolean :: Arbitrary Boolean
@@ -59,13 +55,7 @@
 
     instance arbEither :: (Arbitrary a, Arbitrary b) => Arbitrary (Either a b)
 
-    instance arbFairEither :: (Enum a, Enum b, Arbitrary b) => Arbitrary (FairEither a b)
-
-    instance arbFairTuple :: (Enum a, Enum b, Arbitrary b) => Arbitrary (FairTuple a b)
-
     instance arbFunction :: (CoArbitrary a, Arbitrary b) => Arbitrary (a -> b)
-
-    instance arbLastEnum :: (Enum a) => Arbitrary (LastEnum a)
 
     instance arbMaybe :: (Arbitrary a) => Arbitrary (Maybe a)
 
@@ -83,9 +73,9 @@
 
     instance arbTuple :: (Arbitrary a, Arbitrary b) => Arbitrary (Tuple a b)
 
-    instance coarFairEither :: (Enum a, CoArbitrary b) => CoArbitrary (FairEither a b)
-
     instance coarbAlphaNumString :: CoArbitrary AlphaNumString
+
+    instance coarbArbEnum :: (Enum a) => CoArbitrary (ArbEnum a)
 
     instance coarbArray :: (CoArbitrary a) => CoArbitrary [a]
 
@@ -95,11 +85,7 @@
 
     instance coarbEither :: (CoArbitrary a, CoArbitrary b) => CoArbitrary (Either a b)
 
-    instance coarbFairTuple :: (Enum a, Enum b, CoArbitrary b) => CoArbitrary (FairTuple a b)
-
     instance coarbFunction :: (Arbitrary a, CoArbitrary b) => CoArbitrary (a -> b)
-
-    instance coarbLastEnum :: (Enum a) => CoArbitrary (LastEnum a)
 
     instance coarbMaybe :: (CoArbitrary a) => CoArbitrary (Maybe a)
 
@@ -117,39 +103,19 @@
 
     instance coarbTuple :: (CoArbitrary a, CoArbitrary b) => CoArbitrary (Tuple a b)
 
-    instance enumFairEither :: (Enum a, Enum b) => Enum (FairEither a b)
+    instance enumArbEnum :: (Enum a) => Enum (ArbEnum a)
 
-    instance enumFairTuple :: (Enum a, Enum b) => Enum (FairTuple a b)
-
-    instance enumLastEnum :: (Enum a) => Enum (LastEnum a)
-
-    instance eqFairEither :: (Eq a, Eq b) => Eq (FairEither a b)
-
-    instance eqFairTuple :: (Eq a, Eq b) => Eq (FairTuple a b)
-
-    instance eqLastEnum :: (Eq a) => Eq (LastEnum a)
+    instance eqArbEnum :: (Eq a) => Eq (ArbEnum a)
 
     instance eqResult :: Eq Result
 
-    instance monoidFairTuple :: (Monoid a, Monoid b) => Monoid (FairTuple a b)
-
     instance monoidResult :: Monoid Result
 
-    instance ordFairEither :: (Ord a, Ord b) => Ord (FairEither a b)
-
-    instance ordFairTuple :: (Ord a, Ord b) => Ord (FairTuple a b)
-
-    instance ordLastEnum :: (Ord a) => Ord (LastEnum a)
-
-    instance semigroupFairTuple :: (Semigroup a, Semigroup b) => Semigroup (FairTuple a b)
+    instance ordArbEnum :: (Ord a) => Ord (ArbEnum a)
 
     instance semigroupResult :: Semigroup Result
 
-    instance showFairEither :: (Show a, Show b) => Show (FairEither a b)
-
-    instance showFairTuple :: (Show a, Show b) => Show (FairTuple a b)
-
-    instance showLastEnum :: (Show a) => Show (LastEnum a)
+    instance showArbEnum :: (Show a) => Show (ArbEnum a)
 
     instance showResult :: Show Result
 
@@ -172,7 +138,7 @@
 
     quickCheckPure :: forall prop. (Testable prop) => Number -> Seed -> prop -> [Result]
 
-    runLastEnum :: forall a. LastEnum a -> a
+    runArbEnum :: forall a. ArbEnum a -> a
 
     smallCheck :: forall prop. (Testable prop) => prop -> QC Unit
 
