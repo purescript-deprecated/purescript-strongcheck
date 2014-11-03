@@ -263,6 +263,13 @@ module Test.StrongCheck.Perturb
 
     dims = const 1
 
+  instance perturbBoolean :: Perturb Boolean where 
+    perturb n e = runArbEnum <$> perturb n (ArbEnum e)
+
+    dist a b = dist (ArbEnum a) (ArbEnum b)
+
+    dims = const 1
+
   instance perturbString :: Perturb String where
     perturb d s = S.fromCharArray <$> perturb d (S.toCharArray s)
 
