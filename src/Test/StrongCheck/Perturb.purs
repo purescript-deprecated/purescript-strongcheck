@@ -2,16 +2,18 @@ module Test.StrongCheck.Perturb
   ( Attempts(..)
   , Perturb
   , Perturber(..)
+  , bounded
+  , boundedInt
   , perturb
-  , perterber2
-  , perterber3
-  , perterber4
-  , perterber5
-  , perterber6
-  , perterber7
-  , perterber8
-  , perterber9
-  , perterber10
+  , perturber2
+  , perturber3
+  , perturber4
+  , perturber5
+  , perturber6
+  , perturber7
+  , perturber8
+  , perturber9
+  , perturber10
   , dist
   , dims
   , searchIn'
@@ -75,15 +77,53 @@ module Test.StrongCheck.Perturb
   -- | Will search a total of 10,000 examples before giving up.
   searchIn :: forall a. (Perturb a) => (a -> Boolean) -> a -> Gen a
   searchIn = searchIn' (Attempts 1000) 10
-  
-  perterber2 :: forall a b. (Perturb a, Perturb b) => Perturber (Tuple a b)
-  perterber2 = Perturber { perturb : perturb', dist : dist', dims : dims' } 
+
+  -- | Creates a perturber for numbers that fall within the specified range.
+  bounded :: Number -> Number -> Perturber Number
+  bounded a b = 
+    let l = min a b
+        u = max a b
+
+        length = u - l
+
+        clamp n = max l (min u n)
+
+        perturb' d v = do dx <- arbitrary
+                          return <<< clamp $ dx * length * d + v
+
+        dist' a b = abs (a - b)
+
+        dims' = const 1
+
+    in  Perturber { perturb : perturb', dist : dist', dims : dims' }
+
+  -- | Creates a perturber for integers that fall within the specified range.
+  boundedInt :: Number -> Number -> Perturber Number
+  boundedInt a b = 
+    let l = floor $ min a b
+        u = ceil $ max a b
+
+        length = u - l
+
+        clamp n = max l (min u n)
+
+        perturb' d v = do dx <- arbitrary
+                          return <<< clamp <<< round $ dx * length * d + v
+
+        dist' a b = abs (a - b)
+
+        dims' = const 1
+
+    in  Perturber { perturb : perturb', dist : dist', dims : dims' }
+
+  perturber2 :: forall a b. (Perturb a, Perturb b) => Perturber (Tuple a b)
+  perturber2 = Perturber { perturb : perturb', dist : dist', dims : dims' } 
     where perturb' d (Tuple a b) = let dx = delta 2 d in Tuple <$> perturb dx a <*> perturb dx b
           dist' (Tuple a1 b1) (Tuple a2 b2) = toDist [dist a1 a2, dist b1 b2]
           dims' (Tuple a b) = (dims a) * (dims b)
 
-  perterber3 :: forall a b c. (Perturb a, Perturb b, Perturb c) => Perturber (Tuple a (Tuple b c))
-  perterber3 = Perturber { perturb : perturb', dist : dist', dims : dims' } 
+  perturber3 :: forall a b c. (Perturb a, Perturb b, Perturb c) => Perturber (Tuple a (Tuple b c))
+  perturber3 = Perturber { perturb : perturb', dist : dist', dims : dims' } 
     where perturb' d (Tuple a (Tuple b c)) = 
             let dx = delta 3 d 
             in  Tuple <$> perturb dx a <*> (Tuple <$> perturb dx b <*> perturb dx c)
@@ -92,8 +132,8 @@ module Test.StrongCheck.Perturb
 
           dims' (Tuple a (Tuple b c)) = (dims a) * (dims b) * (dims c)
 
-  perterber4 :: forall a b c d. (Perturb a, Perturb b, Perturb c, Perturb d) => Perturber (Tuple a (Tuple b (Tuple c d)))
-  perterber4 = Perturber { perturb : perturb', dist : dist', dims : dims' } 
+  perturber4 :: forall a b c d. (Perturb a, Perturb b, Perturb c, Perturb d) => Perturber (Tuple a (Tuple b (Tuple c d)))
+  perturber4 = Perturber { perturb : perturb', dist : dist', dims : dims' } 
     where perturb' d0 (Tuple a (Tuple b (Tuple c d))) = 
             let dx = delta 4 d0
             in  Tuple <$> perturb dx a <*> (Tuple <$> perturb dx b <*> (Tuple <$> perturb dx c <*> perturb dx d))
@@ -103,8 +143,8 @@ module Test.StrongCheck.Perturb
 
           dims' (Tuple a (Tuple b (Tuple c d))) = (dims a) * (dims b) * (dims c) * (dims d)
 
-  perterber5 :: forall a b c d e. (Perturb a, Perturb b, Perturb c, Perturb d, Perturb e) => Perturber (Tuple a (Tuple b (Tuple c (Tuple d e))))
-  perterber5 = Perturber { perturb : perturb', dist : dist', dims : dims' } 
+  perturber5 :: forall a b c d e. (Perturb a, Perturb b, Perturb c, Perturb d, Perturb e) => Perturber (Tuple a (Tuple b (Tuple c (Tuple d e))))
+  perturber5 = Perturber { perturb : perturb', dist : dist', dims : dims' } 
     where perturb' d0 (Tuple a (Tuple b (Tuple c (Tuple d e)))) = 
             let dx = delta 5 d0
             in  Tuple <$> perturb dx a <*> 
@@ -119,8 +159,8 @@ module Test.StrongCheck.Perturb
           dims' (Tuple a (Tuple b (Tuple c (Tuple d e)))) = 
             (dims a) * (dims b) * (dims c) * (dims d) * (dims e)
 
-  perterber6 :: forall a b c d e f. (Perturb a, Perturb b, Perturb c, Perturb d, Perturb e, Perturb f) => Perturber (Tuple a (Tuple b (Tuple c (Tuple d (Tuple e f)))))
-  perterber6 = Perturber { perturb : perturb', dist : dist', dims : dims' } 
+  perturber6 :: forall a b c d e f. (Perturb a, Perturb b, Perturb c, Perturb d, Perturb e, Perturb f) => Perturber (Tuple a (Tuple b (Tuple c (Tuple d (Tuple e f)))))
+  perturber6 = Perturber { perturb : perturb', dist : dist', dims : dims' } 
     where perturb' d0 (Tuple a (Tuple b (Tuple c (Tuple d (Tuple e f))))) = 
             let dx = delta 6 d0
             in  Tuple <$> perturb dx a <*> 
@@ -136,8 +176,8 @@ module Test.StrongCheck.Perturb
           dims' (Tuple a (Tuple b (Tuple c (Tuple d (Tuple e f))))) = 
             (dims a) * (dims b) * (dims c) * (dims d) * (dims e) * (dims f)
 
-  perterber7 :: forall a b c d e f g. (Perturb a, Perturb b, Perturb c, Perturb d, Perturb e, Perturb f, Perturb g) => Perturber (Tuple a (Tuple b (Tuple c (Tuple d (Tuple e (Tuple f g))))))
-  perterber7 = Perturber { perturb : perturb', dist : dist', dims : dims' } 
+  perturber7 :: forall a b c d e f g. (Perturb a, Perturb b, Perturb c, Perturb d, Perturb e, Perturb f, Perturb g) => Perturber (Tuple a (Tuple b (Tuple c (Tuple d (Tuple e (Tuple f g))))))
+  perturber7 = Perturber { perturb : perturb', dist : dist', dims : dims' } 
     where perturb' d0 (Tuple a (Tuple b (Tuple c (Tuple d (Tuple e (Tuple f g)))))) = 
             let dx = delta 7 d0
             in  Tuple <$> perturb dx a <*> 
@@ -154,8 +194,8 @@ module Test.StrongCheck.Perturb
           dims' (Tuple a (Tuple b (Tuple c (Tuple d (Tuple e (Tuple f g)))))) = 
             (dims a) * (dims b) * (dims c) * (dims d) * (dims e) * (dims f) * (dims g)
 
-  perterber8 :: forall a b c d e f g h. (Perturb a, Perturb b, Perturb c, Perturb d, Perturb e, Perturb f, Perturb g, Perturb h) => Perturber (Tuple a (Tuple b (Tuple c (Tuple d (Tuple e (Tuple f (Tuple g h)))))))
-  perterber8 = Perturber { perturb : perturb', dist : dist', dims : dims' } 
+  perturber8 :: forall a b c d e f g h. (Perturb a, Perturb b, Perturb c, Perturb d, Perturb e, Perturb f, Perturb g, Perturb h) => Perturber (Tuple a (Tuple b (Tuple c (Tuple d (Tuple e (Tuple f (Tuple g h)))))))
+  perturber8 = Perturber { perturb : perturb', dist : dist', dims : dims' } 
     where perturb' d0 (Tuple a (Tuple b (Tuple c (Tuple d (Tuple e (Tuple f (Tuple g h))))))) = 
             let dx = delta 8 d0
             in  Tuple <$> perturb dx a <*> 
@@ -173,8 +213,8 @@ module Test.StrongCheck.Perturb
           dims' (Tuple a (Tuple b (Tuple c (Tuple d (Tuple e (Tuple f (Tuple g h))))))) = 
             (dims a) * (dims b) * (dims c) * (dims d) * (dims e) * (dims f) * (dims g) * (dims h)
 
-  perterber9 :: forall a b c d e f g h i. (Perturb a, Perturb b, Perturb c, Perturb d, Perturb e, Perturb f, Perturb g, Perturb h, Perturb i) => Perturber (Tuple a (Tuple b (Tuple c (Tuple d (Tuple e (Tuple f (Tuple g (Tuple h i))))))))
-  perterber9 = Perturber { perturb : perturb', dist : dist', dims : dims' } 
+  perturber9 :: forall a b c d e f g h i. (Perturb a, Perturb b, Perturb c, Perturb d, Perturb e, Perturb f, Perturb g, Perturb h, Perturb i) => Perturber (Tuple a (Tuple b (Tuple c (Tuple d (Tuple e (Tuple f (Tuple g (Tuple h i))))))))
+  perturber9 = Perturber { perturb : perturb', dist : dist', dims : dims' } 
     where perturb' d0 (Tuple a (Tuple b (Tuple c (Tuple d (Tuple e (Tuple f (Tuple g (Tuple h i)))))))) = 
             let dx = delta 9 d0
             in  Tuple <$> perturb dx a <*> 
@@ -194,8 +234,8 @@ module Test.StrongCheck.Perturb
           dims' (Tuple a (Tuple b (Tuple c (Tuple d (Tuple e (Tuple f (Tuple g (Tuple h i)))))))) = 
             (dims a) * (dims b) * (dims c) * (dims d) * (dims e) * (dims f) * (dims g) * (dims h) * (dims i)
 
-  perterber10 :: forall a b c d e f g h i j. (Perturb a, Perturb b, Perturb c, Perturb d, Perturb e, Perturb f, Perturb g, Perturb h, Perturb i, Perturb j) => Perturber (Tuple a (Tuple b (Tuple c (Tuple d (Tuple e (Tuple f (Tuple g (Tuple h (Tuple i j)))))))))
-  perterber10 = Perturber { perturb : perturb', dist : dist', dims : dims' } 
+  perturber10 :: forall a b c d e f g h i j. (Perturb a, Perturb b, Perturb c, Perturb d, Perturb e, Perturb f, Perturb g, Perturb h, Perturb i, Perturb j) => Perturber (Tuple a (Tuple b (Tuple c (Tuple d (Tuple e (Tuple f (Tuple g (Tuple h (Tuple i j)))))))))
+  perturber10 = Perturber { perturb : perturb', dist : dist', dims : dims' } 
     where perturb' d0 (Tuple a (Tuple b (Tuple c (Tuple d (Tuple e (Tuple f (Tuple g (Tuple h (Tuple i j))))))))) = 
             let dx = delta 10 d0
             in  Tuple <$> perturb dx a <*> 
