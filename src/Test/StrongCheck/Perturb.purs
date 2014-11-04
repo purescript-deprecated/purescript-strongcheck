@@ -18,6 +18,7 @@ module Test.StrongCheck.Perturb
   , dims
   , searchIn'
   , searchIn
+  , xmap
   ) where
 
   import Test.StrongCheck.Gen
@@ -46,6 +47,13 @@ module Test.StrongCheck.Perturb
     perturb :: Number -> a -> Gen a,
     dist    :: a -> a -> Number,
     dims    :: a -> Number }
+
+  -- TODO: Move to Data.Functor.Invariant
+  xmap :: forall a b. (a -> b) -> (b -> a) -> Perturber a -> Perturber b
+  xmap f g (Perturber p) = Perturber {
+    perturb : \n b -> f <$> p.perturb n (g b),
+    dist    : \b1 b2 -> p.dist (g b1) (g b2),
+    dims    : \b -> p.dims (g b) }
 
   -- | The class for things which can be perturbed.
   -- |
