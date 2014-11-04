@@ -2,6 +2,7 @@ module Test.StrongCheck.Perturb
   ( Attempts(..)
   , Perturb
   , Perturber(..)
+  , PerturberRec(..)
   , bounded
   , boundedInt
   , perturb
@@ -18,6 +19,7 @@ module Test.StrongCheck.Perturb
   , dims
   , searchIn'
   , searchIn
+  , unPerturber
   , xmap
   ) where
 
@@ -43,10 +45,15 @@ module Test.StrongCheck.Perturb
 
   newtype Attempts = Attempts Number
 
-  newtype Perturber a = Perturber {
+  newtype Perturber a = Perturber (PerturberRec a)
+
+  type PerturberRec a = {
     perturb :: Number -> a -> Gen a,
     dist    :: a -> a -> Number,
     dims    :: a -> Number }
+
+  unPerturber :: forall a. Perturber a -> PerturberRec a
+  unPerturber (Perturber v) = v
 
   -- TODO: Move to Data.Functor.Invariant
   xmap :: forall a b. (a -> b) -> (b -> a) -> Perturber a -> Perturber b
