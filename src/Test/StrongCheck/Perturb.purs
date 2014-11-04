@@ -5,6 +5,7 @@ module Test.StrongCheck.Perturb
   , PerturberRec(..)
   , bounded
   , boundedInt
+  , dynCoproduct
   , perturb
   , perturber2
   , perturber3
@@ -130,6 +131,15 @@ module Test.StrongCheck.Perturb
         dims' = const 1
 
     in  Perturber { perturb : perturb', dist : dist', dims : dims' }
+
+  dynCoproduct :: forall a. (Eq a) => a -> [a] -> Perturber a
+  dynCoproduct x xs = Perturber { perturb : perturb', dist : dist', dims : dims' } 
+    where len = 1 + A.length xs
+          cutoff = 1 / (2 * len)
+
+          perturb' n a = if n < cutoff then pure a else elements x xs
+          dist' a1 a2 = if a2 == a2 then 0 else cutoff
+          dims' a = if len > 0 then 1 else 0
 
   perturber2 :: forall a b. (Perturb a, Perturb b) => Perturber (Tuple a b)
   perturber2 = Perturber { perturb : perturb', dist : dist', dims : dims' } 
