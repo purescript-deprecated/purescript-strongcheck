@@ -1,7 +1,7 @@
 {
   "name":       "purescript-strongcheck",
   "license":    "MIT",
-  "version":    "0.4.6",
+  "version":    "0.4.7",
   "repository": "git@github.com:purescript-contrib/purescript-strongcheck.git",
   "contributors": [
     "John A. De Goes <john@degoes.net> (http://degoes.net)",

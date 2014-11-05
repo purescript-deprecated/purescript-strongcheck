@@ -63,7 +63,7 @@ module Test.StrongCheck.Perturb
   -- |   ((>=) n) <<< dist a <$> (perturb n a) must be an infinite generator of `true` values.
   class Perturb a where
     perturber :: Perturber a
-
+ 
   perturb :: forall a. (Perturb a) => Number -> a -> Gen a
   perturb = (unPerturber perturber).perturb
 
@@ -72,6 +72,13 @@ module Test.StrongCheck.Perturb
 
   dims :: forall a. (Perturb a) => a -> Number
   dims = (unPerturber perturber).dims
+
+  -- | Creates a perturber that perturbs nothing.
+  nonPerturber :: forall a. Perturber a
+  nonPerturber = Perturber {
+    perturb : const pure,
+    dist    : const $ const 0,
+    dims    : const 0 }
 
   -- | Given one example, searches for other examples that satisfy a provided
   -- | boolean predicate.
