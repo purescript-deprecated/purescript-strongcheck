@@ -3,21 +3,14 @@ module Test.StrongCheck.Perturb
   , Perturb
   , Perturber(..)
   , PerturberRec(..)
+  , (</\>)
   , bounded
   , boundedInt
-  , dynCoproduct
-  , perturb
-  , perturber2
-  , perturber3
-  , perturber4
-  , perturber5
-  , perturber6
-  , perturber7
-  , perturber8
-  , perturber9
-  , perturber10
   , dist
   , dims
+  , enumerated
+  , perturb
+  , perturber
   , searchIn'
   , searchIn
   , unPerturber
@@ -69,11 +62,16 @@ module Test.StrongCheck.Perturb
   -- |   forall a, 0 >= n <= 1:  
   -- |   ((>=) n) <<< dist a <$> (perturb n a) must be an infinite generator of `true` values.
   class Perturb a where
-    perturb :: Number -> a -> Gen a
+    perturber :: Perturber a
 
-    dist :: a -> a -> Number
+  perturb :: forall a. (Perturb a) => Number -> a -> Gen a
+  perturb = (unPerturber perturber).perturb
 
-    dims :: a -> Number
+  dist :: forall a. (Perturb a) => a -> a -> Number
+  dist = (unPerturber perturber).dist
+
+  dims :: forall a. (Perturb a) => a -> Number
+  dims = (unPerturber perturber).dims
 
   -- | Given one example, searches for other examples that satisfy a provided
   -- | boolean predicate.
@@ -93,6 +91,25 @@ module Test.StrongCheck.Perturb
   -- | Will search a total of 10,000 examples before giving up.
   searchIn :: forall a. (Perturb a) => (a -> Boolean) -> a -> Gen a
   searchIn = searchIn' (Attempts 1000) 10
+
+  infixr 6 </\>
+
+  -- | Combines two perturbers to produce a perturber of the product
+  (</\>) :: forall a b. Perturber a -> Perturber b -> Perturber (Tuple a b)
+  (</\>) (Perturber l) (Perturber r) = Perturber { perturb : perturb', dist : dist', dims : dims' } 
+    where perturb' d (Tuple a b) =
+            let dx = delta (l.dims a + r.dims b) d
+                dx2 = dx * dx
+                ld = sqrt $ dx2 * l.dims a
+                rd = sqrt $ dx2 * r.dims b
+            in Tuple <$> l.perturb ld a <*> r.perturb rd b
+
+          dist' (Tuple a1 b1) (Tuple a2 b2) = toDist [l.dist a1 a2, r.dist b1 b2]
+
+          dims' (Tuple a b) = l.dims a + r.dims b  
+
+  -- this may make sense only for "all enums" or "all continuous"
+  -- (<\/>) :: forall a b. Perturber a -> Perturber b -> Perturber (Either a b)
 
   -- | Creates a perturber for numbers that fall within the specified range.
   bounded :: Number -> Number -> Perturber Number
@@ -132,8 +149,8 @@ module Test.StrongCheck.Perturb
 
     in  Perturber { perturb : perturb', dist : dist', dims : dims' }
 
-  dynCoproduct :: forall a. (Eq a) => a -> [a] -> Perturber a
-  dynCoproduct x xs = Perturber { perturb : perturb', dist : dist', dims : dims' } 
+  enumerated :: forall a. (Eq a) => a -> [a] -> Perturber a
+  enumerated x xs = Perturber { perturb : perturb', dist : dist', dims : dims' } 
     where len = 1 + A.length xs
           cutoff = 1 / (2 * len)
 
@@ -141,206 +158,64 @@ module Test.StrongCheck.Perturb
           dist' a1 a2 = if a2 == a2 then 0 else cutoff
           dims' a = if len > 0 then 1 else 0
 
-  perturber2 :: forall a b. (Perturb a, Perturb b) => Perturber (Tuple a b)
-  perturber2 = Perturber { perturb : perturb', dist : dist', dims : dims' } 
-    where perturb' d (Tuple a b) = let dx = delta 2 d in Tuple <$> perturb dx a <*> perturb dx b
-          dist' (Tuple a1 b1) (Tuple a2 b2) = toDist [dist a1 a2, dist b1 b2]
-          dims' (Tuple a b) = (dims a) * (dims b)
-
-  perturber3 :: forall a b c. (Perturb a, Perturb b, Perturb c) => Perturber (Tuple a (Tuple b c))
-  perturber3 = Perturber { perturb : perturb', dist : dist', dims : dims' } 
-    where perturb' d (Tuple a (Tuple b c)) = 
-            let dx = delta 3 d 
-            in  Tuple <$> perturb dx a <*> (Tuple <$> perturb dx b <*> perturb dx c)
-
-          dist' (Tuple a1 (Tuple b1 c1)) (Tuple a2 (Tuple b2 c2)) = toDist [dist a1 a2, dist b1 b2, dist c1 c2]
-
-          dims' (Tuple a (Tuple b c)) = (dims a) * (dims b) * (dims c)
-
-  perturber4 :: forall a b c d. (Perturb a, Perturb b, Perturb c, Perturb d) => Perturber (Tuple a (Tuple b (Tuple c d)))
-  perturber4 = Perturber { perturb : perturb', dist : dist', dims : dims' } 
-    where perturb' d0 (Tuple a (Tuple b (Tuple c d))) = 
-            let dx = delta 4 d0
-            in  Tuple <$> perturb dx a <*> (Tuple <$> perturb dx b <*> (Tuple <$> perturb dx c <*> perturb dx d))
-
-          dist' (Tuple a1 (Tuple b1 (Tuple c1 d1))) 
-                (Tuple a2 (Tuple b2 (Tuple c2 d2))) = toDist [dist a1 a2, dist b1 b2, dist c1 c2, dist d1 d2]
-
-          dims' (Tuple a (Tuple b (Tuple c d))) = (dims a) * (dims b) * (dims c) * (dims d)
-
-  perturber5 :: forall a b c d e. (Perturb a, Perturb b, Perturb c, Perturb d, Perturb e) => Perturber (Tuple a (Tuple b (Tuple c (Tuple d e))))
-  perturber5 = Perturber { perturb : perturb', dist : dist', dims : dims' } 
-    where perturb' d0 (Tuple a (Tuple b (Tuple c (Tuple d e)))) = 
-            let dx = delta 5 d0
-            in  Tuple <$> perturb dx a <*> 
-                (Tuple <$> perturb dx b <*> 
-                (Tuple <$> perturb dx c <*> 
-                (Tuple <$> perturb dx d <*> perturb dx e)))
-
-          dist' (Tuple a1 (Tuple b1 (Tuple c1 (Tuple d1 e1)))) 
-                (Tuple a2 (Tuple b2 (Tuple c2 (Tuple d2 e2)))) = 
-            toDist [dist a1 a2, dist b1 b2, dist c1 c2, dist d1 d2, dist e1 e2]
-
-          dims' (Tuple a (Tuple b (Tuple c (Tuple d e)))) = 
-            (dims a) * (dims b) * (dims c) * (dims d) * (dims e)
-
-  perturber6 :: forall a b c d e f. (Perturb a, Perturb b, Perturb c, Perturb d, Perturb e, Perturb f) => Perturber (Tuple a (Tuple b (Tuple c (Tuple d (Tuple e f)))))
-  perturber6 = Perturber { perturb : perturb', dist : dist', dims : dims' } 
-    where perturb' d0 (Tuple a (Tuple b (Tuple c (Tuple d (Tuple e f))))) = 
-            let dx = delta 6 d0
-            in  Tuple <$> perturb dx a <*> 
-                (Tuple <$> perturb dx b <*> 
-                (Tuple <$> perturb dx c <*> 
-                (Tuple <$> perturb dx d <*> 
-                (Tuple <$> perturb dx e <*> perturb dx f))))
-
-          dist' (Tuple a1 (Tuple b1 (Tuple c1 (Tuple d1 (Tuple e1 f1))))) 
-                (Tuple a2 (Tuple b2 (Tuple c2 (Tuple d2 (Tuple e2 f2))))) = 
-            toDist [dist a1 a2, dist b1 b2, dist c1 c2, dist d1 d2, dist e1 e2, dist f1 f2]
-
-          dims' (Tuple a (Tuple b (Tuple c (Tuple d (Tuple e f))))) = 
-            (dims a) * (dims b) * (dims c) * (dims d) * (dims e) * (dims f)
-
-  perturber7 :: forall a b c d e f g. (Perturb a, Perturb b, Perturb c, Perturb d, Perturb e, Perturb f, Perturb g) => Perturber (Tuple a (Tuple b (Tuple c (Tuple d (Tuple e (Tuple f g))))))
-  perturber7 = Perturber { perturb : perturb', dist : dist', dims : dims' } 
-    where perturb' d0 (Tuple a (Tuple b (Tuple c (Tuple d (Tuple e (Tuple f g)))))) = 
-            let dx = delta 7 d0
-            in  Tuple <$> perturb dx a <*> 
-                (Tuple <$> perturb dx b <*> 
-                (Tuple <$> perturb dx c <*> 
-                (Tuple <$> perturb dx d <*> 
-                (Tuple <$> perturb dx e <*> 
-                (Tuple <$> perturb dx f <*> perturb dx g)))))
-
-          dist' (Tuple a1 (Tuple b1 (Tuple c1 (Tuple d1 (Tuple e1 (Tuple f1 g1)))))) 
-                (Tuple a2 (Tuple b2 (Tuple c2 (Tuple d2 (Tuple e2 (Tuple f2 g2)))))) = 
-            toDist [dist a1 a2, dist b1 b2, dist c1 c2, dist d1 d2, dist e1 e2, dist f1 f2, dist g1 g2]
-
-          dims' (Tuple a (Tuple b (Tuple c (Tuple d (Tuple e (Tuple f g)))))) = 
-            (dims a) * (dims b) * (dims c) * (dims d) * (dims e) * (dims f) * (dims g)
-
-  perturber8 :: forall a b c d e f g h. (Perturb a, Perturb b, Perturb c, Perturb d, Perturb e, Perturb f, Perturb g, Perturb h) => Perturber (Tuple a (Tuple b (Tuple c (Tuple d (Tuple e (Tuple f (Tuple g h)))))))
-  perturber8 = Perturber { perturb : perturb', dist : dist', dims : dims' } 
-    where perturb' d0 (Tuple a (Tuple b (Tuple c (Tuple d (Tuple e (Tuple f (Tuple g h))))))) = 
-            let dx = delta 8 d0
-            in  Tuple <$> perturb dx a <*> 
-                (Tuple <$> perturb dx b <*> 
-                (Tuple <$> perturb dx c <*> 
-                (Tuple <$> perturb dx d <*> 
-                (Tuple <$> perturb dx e <*> 
-                (Tuple <$> perturb dx f <*> 
-                (Tuple <$> perturb dx g <*> perturb dx h))))))
-
-          dist' (Tuple a1 (Tuple b1 (Tuple c1 (Tuple d1 (Tuple e1 (Tuple f1 (Tuple g1 h1))))))) 
-                (Tuple a2 (Tuple b2 (Tuple c2 (Tuple d2 (Tuple e2 (Tuple f2 (Tuple g2 h2))))))) = 
-            toDist [dist a1 a2, dist b1 b2, dist c1 c2, dist d1 d2, dist e1 e2, dist f1 f2, dist g1 g2, dist h1 h2]
-
-          dims' (Tuple a (Tuple b (Tuple c (Tuple d (Tuple e (Tuple f (Tuple g h))))))) = 
-            (dims a) * (dims b) * (dims c) * (dims d) * (dims e) * (dims f) * (dims g) * (dims h)
-
-  perturber9 :: forall a b c d e f g h i. (Perturb a, Perturb b, Perturb c, Perturb d, Perturb e, Perturb f, Perturb g, Perturb h, Perturb i) => Perturber (Tuple a (Tuple b (Tuple c (Tuple d (Tuple e (Tuple f (Tuple g (Tuple h i))))))))
-  perturber9 = Perturber { perturb : perturb', dist : dist', dims : dims' } 
-    where perturb' d0 (Tuple a (Tuple b (Tuple c (Tuple d (Tuple e (Tuple f (Tuple g (Tuple h i)))))))) = 
-            let dx = delta 9 d0
-            in  Tuple <$> perturb dx a <*> 
-                (Tuple <$> perturb dx b <*> 
-                (Tuple <$> perturb dx c <*> 
-                (Tuple <$> perturb dx d <*> 
-                (Tuple <$> perturb dx e <*> 
-                (Tuple <$> perturb dx f <*> 
-                (Tuple <$> perturb dx g <*> 
-                (Tuple <$> perturb dx h <*> perturb dx i)))))))
-
-          dist' (Tuple a1 (Tuple b1 (Tuple c1 (Tuple d1 (Tuple e1 (Tuple f1 (Tuple g1 (Tuple h1 i1)))))))) 
-                (Tuple a2 (Tuple b2 (Tuple c2 (Tuple d2 (Tuple e2 (Tuple f2 (Tuple g2 (Tuple h2 i2)))))))) = 
-            toDist [dist a1 a2, dist b1 b2, dist c1 c2, dist d1 d2, dist e1 e2, 
-                    dist f1 f2, dist g1 g2, dist h1 h2, dist i1 i2]
-
-          dims' (Tuple a (Tuple b (Tuple c (Tuple d (Tuple e (Tuple f (Tuple g (Tuple h i)))))))) = 
-            (dims a) * (dims b) * (dims c) * (dims d) * (dims e) * (dims f) * (dims g) * (dims h) * (dims i)
-
-  perturber10 :: forall a b c d e f g h i j. (Perturb a, Perturb b, Perturb c, Perturb d, Perturb e, Perturb f, Perturb g, Perturb h, Perturb i, Perturb j) => Perturber (Tuple a (Tuple b (Tuple c (Tuple d (Tuple e (Tuple f (Tuple g (Tuple h (Tuple i j)))))))))
-  perturber10 = Perturber { perturb : perturb', dist : dist', dims : dims' } 
-    where perturb' d0 (Tuple a (Tuple b (Tuple c (Tuple d (Tuple e (Tuple f (Tuple g (Tuple h (Tuple i j))))))))) = 
-            let dx = delta 10 d0
-            in  Tuple <$> perturb dx a <*> 
-                (Tuple <$> perturb dx b <*> 
-                (Tuple <$> perturb dx c <*> 
-                (Tuple <$> perturb dx d <*> 
-                (Tuple <$> perturb dx e <*> 
-                (Tuple <$> perturb dx f <*> 
-                (Tuple <$> perturb dx g <*> 
-                (Tuple <$> perturb dx h <*> 
-                (Tuple <$> perturb dx i <*> perturb dx j))))))))
-
-          dist' (Tuple a1 (Tuple b1 (Tuple c1 (Tuple d1 (Tuple e1 (Tuple f1 (Tuple g1 (Tuple h1 (Tuple i1 j1))))))))) 
-                (Tuple a2 (Tuple b2 (Tuple c2 (Tuple d2 (Tuple e2 (Tuple f2 (Tuple g2 (Tuple h2 (Tuple i2 j2))))))))) = 
-            toDist [dist a1 a2, dist b1 b2, dist c1 c2, dist d1 d2, dist e1 e2, 
-                    dist f1 f2, dist g1 g2, dist h1 h2, dist i1 i2, dist j1 j2]
-
-          dims' (Tuple a (Tuple b (Tuple c (Tuple d (Tuple e (Tuple f (Tuple g (Tuple h (Tuple i j))))))))) = 
-            (dims a) * (dims b) * (dims c) * (dims d) * (dims e) * (dims f) * (dims g) * (dims h) * (dims i) * (dims j)
-
   instance perturbArbEnum :: (Enum a) => Perturb (ArbEnum a) where
-    perturb n e = cardPerturb1 (cardPerturb1F e n)
+    perturber = Perturber { perturb : perturb', dist : dist', dims : dims' } 
+      where perturb' n e = cardPerturb1 (cardPerturb1F e n)
 
-    dist a b = cardDist1 f a b where
-      f (Cardinality sz) a b = if runArbEnum a == runArbEnum b then 0 else 1 / (2 * sz)
+            dist' a b = cardDist1 f a b where
+              f (Cardinality sz) a b = if runArbEnum a == runArbEnum b then 0 else 1 / (2 * sz)
 
-    dims e = enumDims f e where
-      f (Cardinality sz) e = if sz <= 0 then 0 else 1
+            dims' e = enumDims f e where
+              f (Cardinality sz) e = if sz <= 0 then 0 else 1
 
   instance perturbNumber :: Perturb Number where
-    perturb 0 n = pure n
-    perturb d n = do
-      u <- uniform -- 'up to' d
-      s <- runSignum <$> arbitrary
-      return $ s * (Math.exp(k0 * (u * d)) - 1) + n
+    perturber = Perturber { perturb : perturb', dist : dist', dims : dims' } 
+      where perturb' 0 n = pure n
+            perturb' d n = do
+              u <- uniform -- 'up to' d
+              s <- runSignum <$> arbitrary
+              return $ s * (Math.exp(k0 * (u * d)) - 1) + n
 
-    dist a b = 
-      let from y = Math.log(y + 1) / k0
-      in  (Math.min 1) <<< Math.abs <<< from $ Math.abs (a - b)
+            dist' a b = 
+              let from y = Math.log(y + 1) / k0
+              in  (Math.min 1) <<< Math.abs <<< from $ Math.abs (a - b)
 
-    dims = const 1
+            dims' = const 1
 
   instance perturbArray :: (Perturb a) => Perturb [a] where
-    perturb d []  = pure $ []
-    perturb 0 a   = sequence $ perturb 0 <$> a
-    perturb d a   = let dx = delta (A.length a) d
-                    in  sequence $ perturb dx <$> a
- 
-    dist a b = toDist $ A.zipWith dist a b
+    perturber = Perturber { perturb : perturb', dist : dist', dims : dims' } 
+      where perturb' d []  = pure $ []
+            perturb' 0 a   = sequence $ perturb 0 <$> a
+            perturb' d a   = let dx = delta (A.length a) d
+                             in  sequence $ perturb dx <$> a
+         
+            dist' a b = toDist $ A.zipWith dist a b
 
-    dims = A.length
-
-  instance perturbTuple :: (Perturb a, Perturb b) => Perturb (Tuple a b) where
-    perturb d (Tuple a b) = let dx = delta 2 d
-                            in  Tuple <$> (perturb dx a) <*> (perturb dx b)
-
-    dist (Tuple a1 b1) (Tuple a2 b2) = toDist [dist a1 a2, dist b1 b2]
-
-    dims (Tuple a b) = dims a + dims b
+            dims' = A.length
 
   instance perturbChar :: Perturb Char where
-    perturb n e = if n < 1 / (2 * 65536) then pure e else arbitrary
+    perturber = Perturber { perturb : perturb', dist : dist', dims : dims' } 
+      where perturb' n e = if n < 1 / (2 * 65536) then pure e else (arbitrary :: Gen Char)
 
-    dist a b = if a == b then 0 else 1 / (2 * 65536)
+            dist' a b = if a == b then 0 else 1 / (2 * 65536)
 
-    dims = const 1
+            dims' = const 1
 
   instance perturbBoolean :: Perturb Boolean where 
-    perturb n e = runArbEnum <$> perturb n (ArbEnum e)
+    perturber = Perturber { perturb : perturb', dist : dist', dims : dims' } 
+      where perturb' n e = runArbEnum <$> perturb n (ArbEnum e)
 
-    dist a b = dist (ArbEnum a) (ArbEnum b)
+            dist' a b = dist (ArbEnum a) (ArbEnum b)
 
-    dims = const 1
+            dims' = const 1
 
   instance perturbString :: Perturb String where
-    perturb d s = S.fromCharArray <$> perturb d (S.toCharArray s)
+    perturber = Perturber { perturb : perturb', dist : dist', dims : dims' } 
+      where perturb' d s = S.fromCharArray <$> perturb d (S.toCharArray s)
 
-    dist s1 s2 = dist (S.toCharArray s1) (S.toCharArray s2)
+            dist' s1 s2 = dist (S.toCharArray s1) (S.toCharArray s2)
 
-    dims = dims <<< S.toCharArray
+            dims' = dims <<< S.toCharArray
 
   -- magical constants
   maxNumber :: Number
