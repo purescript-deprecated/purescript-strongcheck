@@ -9,6 +9,7 @@ module Test.StrongCheck.Perturb
   , dist
   , dims
   , enumerated
+  , nonPerturber
   , perturb
   , perturber
   , searchIn'

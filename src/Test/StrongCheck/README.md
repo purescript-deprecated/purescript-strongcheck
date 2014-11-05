@@ -147,33 +147,58 @@
     newtype Attempts where
       Attempts :: Number -> Attempts
 
+    newtype Perturber a where
+      Perturber :: PerturberRec a -> Perturber a
+
+    type PerturberRec a = { dims :: a -> Number, dist :: a -> a -> Number, perturb :: Number -> a -> Gen a }
+
 
 ### Type Classes
 
     class Perturb a where
-      perturb :: Number -> a -> Gen a
-      dist :: a -> a -> Number
-      dims :: a -> Number
+      perturber :: Perturber a
 
 
 ### Type Class Instances
 
+    instance perturbArbEnum :: (Enum a) => Perturb (ArbEnum a)
+
     instance perturbArray :: (Perturb a) => Perturb [a]
 
-    instance perturbEnum :: (Enum a) => Perturb a
+    instance perturbBoolean :: Perturb Boolean
+
+    instance perturbChar :: Perturb Char
 
     instance perturbNumber :: Perturb Number
 
     instance perturbString :: Perturb String
 
-    instance perturbTuple :: (Perturb a, Perturb b) => Perturb (Tuple a b)
-
 
 ### Values
+
+    (</\>) :: forall a b. Perturber a -> Perturber b -> Perturber (Tuple a b)
+
+    bounded :: Number -> Number -> Perturber Number
+
+    boundedInt :: Number -> Number -> Perturber Number
+
+    dims :: forall a. (Perturb a) => a -> Number
+
+    dist :: forall a. (Perturb a) => a -> a -> Number
+
+    enumerated :: forall a. (Eq a) => a -> [a] -> Perturber a
+
+    nonPerturber :: forall a. Perturber a
+
+    perturb :: forall a. (Perturb a) => Number -> a -> Gen a
 
     searchIn :: forall a. (Perturb a) => (a -> Boolean) -> a -> Gen a
 
     searchIn' :: forall a. (Perturb a) => Attempts -> Number -> (a -> Boolean) -> a -> Gen a
+
+    unPerturber :: forall a. Perturber a -> PerturberRec a
+
+    xmap :: forall a b. (a -> b) -> (b -> a) -> Perturber a -> Perturber b
 
 
 
