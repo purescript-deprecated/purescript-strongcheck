@@ -4,6 +4,7 @@ module Test.StrongCheck.Perturb
   , Perturber(..)
   , PerturberRec(..)
   , (</\>)
+  , (<\/>)
   , bounded
   , boundedInt
   , dist

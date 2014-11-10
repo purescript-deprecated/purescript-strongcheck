@@ -178,6 +178,8 @@
 
     (</\>) :: forall a b. Perturber a -> Perturber b -> Perturber (Tuple a b)
 
+    (<\/>) :: forall a b. Perturber a -> Perturber b -> Perturber (Either a b)
+
     bounded :: Number -> Number -> Perturber Number
 
     boundedInt :: Number -> Number -> Perturber Number
