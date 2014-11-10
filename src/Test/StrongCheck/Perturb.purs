@@ -116,8 +116,20 @@ module Test.StrongCheck.Perturb
 
           dims' (Tuple a b) = l.dims a + r.dims b  
 
-  -- this may make sense only for "all enums" or "all continuous"
-  -- (<\/>) :: forall a b. Perturber a -> Perturber b -> Perturber (Either a b)
+  infixr 6 <\/>
+
+  -- | Combines two perturbers to produce a perturber of the sum
+  (<\/>) :: forall a b. Perturber a -> Perturber b -> Perturber (Either a b)
+  (<\/>) (Perturber l) (Perturber r) = Perturber { perturb : perturb', dist : dist', dims : dims' } 
+    where perturb' d (Left  a) = Left <$> l.perturb d a
+          perturb' d (Right b) = Right <$> r.perturb d b
+
+          dist' (Left  a1) (Left  a2) = l.dist a1 a2
+          dist' (Right b1) (Right b2) = r.dist b1 b2
+          dist' _ _                   = 1 -- FIXME: underconstrained
+
+          dims' (Left  a) = l.dims a
+          dims' (Right b) = r.dims b  
 
   -- | Creates a perturber for numbers that fall within the specified range.
   bounded :: Number -> Number -> Perturber Number
