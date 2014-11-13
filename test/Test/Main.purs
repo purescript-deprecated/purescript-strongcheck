@@ -117,7 +117,7 @@ verify_gen (Mega m) = fold [
   m.dropGen == [-1]                                   <?> "dropGen: "     ++ show m.dropGen,
   m.takeGen == [2, 1]                                 <?> "takeGen: "     ++ show m.takeGen,
   all (flip elem ["foo", "bar", "baz"]) m.elements    <?> "elements: "    ++ show m.elements,
-  m.extend == ["5", "5", "5"]                         <?> "extend: "      ++ show m.extend,
+  Array.take 3 m.extend == ["5", "5", "5"]            <?> "extend: "      ++ show m.extend,
   m.infinite == ["foo", "foo", "foo", "foo"]          <?> "infinite: "    ++ show m.infinite,
   m.perms == ["John", "D"] : ["D", "John"] : []       <?> "perms: "       ++ show m.perms,
   m.combos == ["foo", "bar"] : ["foo", "baz"] : 

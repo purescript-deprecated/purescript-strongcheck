@@ -253,7 +253,7 @@ dropGen n = liftMealy $ Mealy.drop n
 -- | Extends a generator to produce *at least* the specified number of values.
 -- | Will not turn a finite generator into an infinite one.
 extend :: forall f a. (Monad f) => Number -> GenT f a -> GenT f a
-extend n (GenT m) = GenT $ loop 0 m
+extend n (GenT m) = (GenT $ loop 0 m) <> (GenT m)
   where m0 = m
         loop i m = Mealy.mealy \st -> 
           let f Mealy.Halt       = if i >= n then pure Mealy.Halt else Mealy.stepMealy st (loop i m0)
