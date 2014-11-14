@@ -7,6 +7,7 @@ module Test.StrongCheck.Gen
   , Seed()
   , allInArray
   , allInRange
+  , applyGen
   , arrayOf 
   , arrayOf1 
   , charGen
@@ -356,6 +357,13 @@ allInArray a = GenT $ go 0 where
 collectAll :: forall f a. (Monad f) => GenState -> GenT f a -> f [a]
 collectAll = foldGen f []
   where f v a = Just $ v <> [a]
+
+-- | Applies a state to a generator to possibly produce the next state,
+-- | a value, and the next generator.
+applyGen :: forall f a. (Monad f) => GenState -> GenT f a -> f (Maybe (GenOut (Tuple a (GenT f a))))
+applyGen s (GenT m) = f <$> Mealy.stepMealy s m where
+  f Mealy.Halt = Nothing
+  f (Mealy.Emit (GenOut { state = s, value = a }) m) = Just $ GenOut { state: s, value: Tuple a (GenT m)}
 
 -- | Samples a generator, producing the specified number of values.
 sample' :: forall f a. (Monad f) => Number -> GenState -> GenT f a -> f [a]

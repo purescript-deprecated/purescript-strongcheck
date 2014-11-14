@@ -63,6 +63,8 @@
 
     allInRange :: forall f a. (Monad f) => Number -> Number -> GenT f Number
 
+    applyGen :: forall f a. (Monad f) => GenState -> GenT f a -> f (Maybe (GenOut (Tuple a (GenT f a))))
+
     arrayOf :: forall f a. (Monad f) => GenT f a -> GenT f [a]
 
     arrayOf1 :: forall f a. (Monad f) => GenT f a -> GenT f (Tuple a [a])
