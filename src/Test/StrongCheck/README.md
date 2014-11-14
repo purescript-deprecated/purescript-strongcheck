@@ -131,6 +131,8 @@
 
     takeGen :: forall f a. (Monad f) => Number -> GenT f a -> GenT f a
 
+    toLazyList :: forall a. Gen a -> GenState -> ListT.ListT Lazy a
+
     transGen :: forall f a b c. (Monad f) => (b -> a -> Tuple b (Maybe c)) -> b -> GenT f a -> GenT f c
 
     uniform :: forall f. (Monad f) => GenT f Seed
@@ -138,6 +140,8 @@
     variant :: forall f a. (Monad f) => Seed -> GenT f a -> GenT f a
 
     vectorOf :: forall f a. (Monad f) => Number -> GenT f a -> GenT f [a]
+
+    wrapEffect :: forall f a. (Monad f) => f a -> GenT f a
 
 
 ## Module Test.StrongCheck.Perturb

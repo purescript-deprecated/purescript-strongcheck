@@ -41,10 +41,12 @@ module Test.StrongCheck.Gen
   , suchThat
   , suchThatMaybe
   , takeGen 
+  , toLazyList
   , transGen
   , uniform 
   , variant 
-  , vectorOf 
+  , vectorOf
+  , wrapEffect
   ) where
 
 import Control.Monad.Eff
@@ -61,17 +63,21 @@ import Data.Maybe.Unsafe
 import Data.Foldable
 import Data.Traversable
 import qualified Data.Array as A
+import qualified Data.Machine.Mealy as Mealy
+
 import Control.Monad.Free
 import Control.Monad.Trampoline
 import Control.Arrow
 import Control.Monad
+import qualified Control.Monad.ListT as ListT
 import Control.Bind
 import Control.Plus
 import Control.Alt
 import Control.Alternative
 import Control.MonadPlus
+
 import qualified Math as M
-import qualified Data.Machine.Mealy as Mealy
+
 
 type Size = Number
 type Seed  = Number
@@ -383,6 +389,11 @@ chunked n g = transGen f [] (extend n g) where
   f xs a = let xs' = a : xs
            in  if A.length xs' >= n then Tuple [] (Just xs') else Tuple xs' Nothing
 
+-- | Wraps an effect in a generator that ignores the input state.
+wrapEffect :: forall f a. (Monad f) => f a -> GenT f a
+wrapEffect fa = GenT $ g <$> (id &&& (Mealy.wrapEffect fa)) where
+  g (Tuple l r) = GenOut { state: l, value: r }
+
 -- | Creates a generator that mixes up the order of the specified generator.
 -- | This is achieved by chunking the generator with the specified size 
 -- | and then shuffling each chunk before continuing to the next.
@@ -403,6 +414,14 @@ shuffleArray = shuffle0 [] where
   shuffle0 acc xs  = do i <- chooseInt 0 (A.length xs - 1)
                         let acc' = acc <> (maybe [] (flip (:) []) (xs A.!! i))
                         shuffle0 acc' (A.deleteAt i 1 xs)
+
+-- | Converts the generator into a function that, given the initial state, 
+-- | returns a lazy list.
+toLazyList :: forall a. Gen a -> GenState -> ListT.ListT Lazy a
+toLazyList (GenT m) s = ListT.wrapLazy $ defer \_ -> loop m s where
+  loop m s  = case runTrampoline (Mealy.stepMealy s m) of
+                Mealy.Halt                                      -> ListT.nil
+                Mealy.Emit (GenOut { value = a, state = s }) m  -> ListT.prepend' a (defer \_ -> loop m s)
 
 instance semigroupGenState :: Semigroup GenState where
   (<>) (GenState a) (GenState b) = GenState { seed: perturbNum a.seed b.seed, size: b.size }
