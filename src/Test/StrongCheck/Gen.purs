@@ -45,6 +45,7 @@ module Test.StrongCheck.Gen
   , toLazyList
   , transGen
   , uniform 
+  , updateSeedState
   , variant 
   , vectorOf
   , wrapEffect

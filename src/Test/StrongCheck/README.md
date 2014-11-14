@@ -139,6 +139,8 @@
 
     uniform :: forall f. (Monad f) => GenT f Seed
 
+    updateSeedState :: GenState -> GenState
+
     variant :: forall f a. (Monad f) => Seed -> GenT f a -> GenT f a
 
     vectorOf :: forall f a. (Monad f) => Number -> GenT f a -> GenT f [a]
