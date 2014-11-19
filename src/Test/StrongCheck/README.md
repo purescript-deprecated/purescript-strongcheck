@@ -154,6 +154,42 @@
     wrapEffect :: forall f a. (Monad f) => f a -> GenT f a
 
 
+## Module Test.StrongCheck.Landscape
+
+### Types
+
+    newtype DriverState a where
+      DriverState :: DriverStateRec a -> DriverState a
+
+    type DriverStateRec a = { state :: GenState, variance :: Number, value :: a }
+
+    newtype Landscape a where
+      Landscape :: Cofree L.List (DriverState a) -> Landscape a
+
+
+### Values
+
+    everywhere :: forall a. (Arbitrary a, Perturb a) => Number -> L.List (Landscape a)
+
+    everywhere' :: forall a. (Arbitrary a, Perturb a) => GenState -> Number -> L.List (Landscape a)
+
+    moveTo :: forall a. (Eq a, Perturb a) => a -> Landscape a -> Maybe (Landscape a)
+
+    nearby :: forall a. (Perturb a) => a -> Number -> Landscape a
+
+    nearby' :: forall a. (Perturb a) => a -> GenState -> Number -> Landscape a
+
+    sample :: forall a. (Perturb a) => Number -> Landscape a -> [a]
+
+    somewhere :: forall a. (Arbitrary a, Perturb a) => Number -> Landscape a
+
+    somewhere' :: forall a. (Arbitrary a, Perturb a) => GenState -> Number -> Landscape a
+
+    unDriverState :: forall a. DriverState a -> DriverStateRec a
+
+    unLandscape :: forall a. Landscape a -> Cofree L.List (DriverState a)
+
+
 ## Module Test.StrongCheck.Perturb
 
 ### Types
