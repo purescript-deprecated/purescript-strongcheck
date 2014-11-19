@@ -45,6 +45,9 @@ module Test.StrongCheck.Gen
   , toLazyList
   , transGen
   , uniform 
+  , unGen 
+  , unGenOut
+  , unGenState
   , updateSeedState
   , variant 
   , vectorOf

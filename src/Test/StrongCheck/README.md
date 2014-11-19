@@ -137,6 +137,12 @@
 
     transGen :: forall f a b c. (Monad f) => (b -> a -> Tuple b (Maybe c)) -> b -> GenT f a -> GenT f c
 
+    unGen :: forall f a. GenT f a -> Mealy.MealyT f GenState (GenOut a)
+
+    unGenOut :: forall a. GenOut a -> { value :: a, state :: GenState }
+
+    unGenState :: GenState -> { size :: Size, seed :: Seed }
+
     uniform :: forall f. (Monad f) => GenT f Seed
 
     updateSeedState :: GenState -> GenState
