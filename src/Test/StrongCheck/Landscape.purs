@@ -28,7 +28,7 @@ module Test.StrongCheck.Landscape
 
   import Test.StrongCheck.Perturb (Perturb, perturb)
   import Test.StrongCheck (Arbitrary, arbitrary)
-  import Test.StrongCheck.Gen (GenState(..), Gen(..), toLazyList, updateSeedState, unGenOut, applyGen)
+  import Test.StrongCheck.Gen (GenState(..), Gen(..), toLazyList, updateSeedState, unGenOut, applyGen, infinite)
 
   newtype DriverState a = DriverState (DriverStateRec a)
 
@@ -39,13 +39,15 @@ module Test.StrongCheck.Landscape
   -- | Creates a landscape whose initial points are randomly chosen across
   -- | the entire landscape.
   everywhere' :: forall a. (Arbitrary a, Perturb a) => GenState -> Number -> L.List (Landscape a)
-  everywhere' s v = force (go arbitrary s)
-    where go :: forall a. (Arbitrary a, Perturb a) => Gen a -> GenState -> Lazy (L.List (Landscape a))
-          go g s = do o   <- defer \_ -> (unGenOut $ Data.Maybe.Unsafe.fromJust (runTrampoline (applyGen s g)))
-                      let a  = fst o.value
-                      let g  = snd o.value
-                      let s' = o.state
-                      return $ L.prepend' (nearby' a s' v) (go g s')
+  everywhere' s v = L.wrapEffect (go (infinite arbitrary) s)
+    where go g s = defer \_ -> 
+                      let o :: Maybe _
+                          o = unGenOut <$> runTrampoline (applyGen s g)
+                      in  maybe L.nil 
+                            (\o ->  let a  = fst o.value
+                                        g  = snd o.value
+                                        s' = o.state
+                                    in  L.prepend' (nearby' a s' v) (go g s')) o
 
   -- | Creates a landscape whose initial points are randomly chosen across
   -- | the entire landscape, using the default GenState.
