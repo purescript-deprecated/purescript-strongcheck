@@ -1,13 +1,18 @@
 module Test.StrongCheck.Landscape
-  ( DriverState(..)
+  ( Decay(..)
+  , DriverState(..)
   , DriverStateRec(..)
+  , Variance(..)
   , Landscape(..)
+  , decayHalf
+  , decayThird
   , everywhere
   , everywhere'
   , moveTo
   , nearby
   , nearby'
-  , sample
+  , sampleHere
+  , sampleHere'
   , somewhere
   , somewhere'
   , unDriverState
@@ -30,60 +35,67 @@ module Test.StrongCheck.Landscape
   import Test.StrongCheck (Arbitrary, arbitrary)
   import Test.StrongCheck.Gen (GenState(..), Gen(..), toLazyList, updateSeedState, unGenOut, applyGen, infinite)
 
-  newtype DriverState a = DriverState (DriverStateRec a)
-
   type DriverStateRec a = { value :: a, variance :: Number, state :: GenState }
 
+  newtype DriverState a = DriverState (DriverStateRec a)
   newtype Landscape a = Landscape (Cofree L.List (DriverState a))
+  
+  type Variance = Number
+  type Decay = Number -> Number
+
+  decayHalf :: Decay
+  decayHalf v = v / 2
+
+  decayThird :: Decay
+  decayThird v = v / 3
 
   -- | Creates a landscape whose initial points are randomly chosen across
   -- | the entire landscape.
-  everywhere' :: forall a. (Arbitrary a, Perturb a) => GenState -> Number -> L.List (Landscape a)
-  everywhere' s v = L.wrapEffect (go (infinite arbitrary) s)
+  everywhere' :: forall a. (Arbitrary a, Perturb a) => GenState -> Decay -> Variance -> L.List (Landscape a)
+  everywhere' s d v = L.wrapEffect (go (infinite arbitrary) s)
     where go g s = defer \_ -> 
-                      let o :: Maybe _
-                          o = unGenOut <$> runTrampoline (applyGen s g)
+                      let o = unGenOut <$> runTrampoline (applyGen s g)
                       in  maybe L.nil 
                             (\o ->  let a  = fst o.value
                                         g  = snd o.value
                                         s' = o.state
-                                    in  L.prepend' (nearby' a s' v) (go g s')) o
+                                    in  L.prepend' (nearby' s' d a v) (go g s')) o
 
   -- | Creates a landscape whose initial points are randomly chosen across
-  -- | the entire landscape, using the default GenState.
-  everywhere :: forall a. (Arbitrary a, Perturb a) => Number -> L.List (Landscape a)
-  everywhere = everywhere' mempty
+  -- | the entire landscape, using the default GenState and Decay.
+  everywhere :: forall a. (Arbitrary a, Perturb a) => Variance -> L.List (Landscape a)
+  everywhere = everywhere' mempty decayHalf
 
   -- | Picks somewhere and forms a landscape around that location.
-  somewhere' :: forall a. (Arbitrary a, Perturb a) => GenState -> Number -> Maybe (Landscape a)
-  somewhere' s = force <<< L.head <<< everywhere' s
+  somewhere' :: forall a. (Arbitrary a, Perturb a) => GenState -> Decay -> Variance -> Maybe (Landscape a)
+  somewhere' s d = force <<< L.head <<< everywhere' s d
 
   -- | Picks somewhere and forms a landscape around that location, using the
-  -- | default GenState.
-  somewhere :: forall a. (Arbitrary a, Perturb a) => Number -> Maybe (Landscape a)
-  somewhere = somewhere' mempty
+  -- | default GenState and Decay.
+  somewhere :: forall a. (Arbitrary a, Perturb a) => Variance -> Maybe (Landscape a)
+  somewhere = somewhere' mempty decayHalf
 
   -- | Creates a landscape that samples the area around a location.
-  nearby' :: forall a. (Perturb a) => a -> GenState -> Number -> Landscape a
-  nearby' a s v = Landscape $ mkCofree (mkState a v s) (loop a s v)
+  nearby' :: forall a. (Perturb a) => GenState -> Decay -> a -> Variance -> Landscape a
+  nearby' s d a v = Landscape $ mkCofree (mkState a v s) (loop a s v)
     where loop a s v = 
-            do  a' <- toLazyList (perturb v a) s
+            do  a' <- toLazyList (infinite (perturb v a)) s
                 let h = mkState a' v s
-                let t = loop a' (updateSeedState s) (v / 2)
+                let t = loop a' (updateSeedState s) (d v)
                 return $ mkCofree h t
 
   -- | Creates a landscape that samples the area around a location, using the 
-  -- | default GenState.
-  nearby :: forall a. (Perturb a) => a -> Number -> Landscape a
-  nearby a = nearby' a mempty
+  -- | default GenState and Decay.
+  nearby :: forall a. (Perturb a) => a -> Variance -> Landscape a
+  nearby = nearby' mempty decayHalf
 
   -- | Samples around the current location area, returning full state information.
-  sample' :: forall a. (Perturb a) => Number -> Landscape a -> [DriverState a]
-  sample' n = force <<< L.toArray <<< L.take n <<< (<$>) head <<< tail <<< unLandscape
+  sampleHere' :: forall a. (Perturb a) => Number -> Landscape a -> [DriverState a]
+  sampleHere' n = force <<< L.toArray <<< L.take n <<< (<$>) head <<< tail <<< unLandscape
 
   -- | Samples around the current location area, returning just the values.
-  sample :: forall a. (Perturb a) => Number -> Landscape a -> [a]
-  sample n = (<$>) (unDriverState >>> \v -> v.value) <<< sample' n
+  sampleHere :: forall a. (Perturb a) => Number -> Landscape a -> [a]
+  sampleHere n = (<$>) (unDriverState >>> \v -> v.value) <<< sampleHere' n
 
   -- | Moves to a location in a landscape that was previously sampled.
   moveTo :: forall a. (Eq a, Perturb a) => a -> Landscape a -> Maybe (Landscape a)

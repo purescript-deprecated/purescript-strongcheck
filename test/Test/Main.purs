@@ -6,6 +6,7 @@ import Debug.Trace
 import Test.StrongCheck
 import Test.StrongCheck.Gen
 import Test.StrongCheck.Perturb
+import Test.StrongCheck.Landscape
 import Control.Monad.Trampoline
 import Data.Monoid
 import Data.Tuple
@@ -145,3 +146,9 @@ main = do
   let v = runTrampoline $ sample 1 $ searchIn found 35.24
   trace $ show v
   assert $ maybe false found (v Array.!! 0)
+
+  trace "creating infinite bool landscape doesn't blow the stack"
+  assert $ isJust $ (somewhere 1 :: Maybe (Landscape Boolean))
+
+  trace "sampling 100 values produces 100 values"
+  assert $ ((==) 100 <<< Array.length <<< sampleHere 100 <$> (somewhere 1 :: Maybe (Landscape Boolean))) == Just true
