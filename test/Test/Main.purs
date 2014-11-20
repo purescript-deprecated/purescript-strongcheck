@@ -152,3 +152,9 @@ main = do
 
   trace "sampling 100 values produces 100 values"
   assert $ ((==) 100 <<< Array.length <<< sampleHere 100 <$> (somewhere 1 :: Maybe (Landscape Boolean))) == Just true
+
+  trace "Can move to sampled value"
+  assert $ (do  l <- (somewhere 1 :: Maybe (Landscape Boolean))
+                x <- Array.head $ Array.drop 50 (sampleHere 100 l)
+                l <- moveTo x l
+                return true) == Just true
