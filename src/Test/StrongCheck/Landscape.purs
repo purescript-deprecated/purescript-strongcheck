@@ -55,12 +55,12 @@ module Test.StrongCheck.Landscape
   everywhere = everywhere' mempty
 
   -- | Picks somewhere and forms a landscape around that location.
-  somewhere' :: forall a. (Arbitrary a, Perturb a) => GenState -> Number -> Landscape a
-  somewhere' s = Data.Maybe.Unsafe.fromJust <<< force <<< L.head <<< everywhere' s
+  somewhere' :: forall a. (Arbitrary a, Perturb a) => GenState -> Number -> Maybe (Landscape a)
+  somewhere' s = force <<< L.head <<< everywhere' s
 
   -- | Picks somewhere and forms a landscape around that location, using the
   -- | default GenState.
-  somewhere :: forall a. (Arbitrary a, Perturb a) => Number -> Landscape a
+  somewhere :: forall a. (Arbitrary a, Perturb a) => Number -> Maybe (Landscape a)
   somewhere = somewhere' mempty
 
   -- | Creates a landscape that samples the area around a location.

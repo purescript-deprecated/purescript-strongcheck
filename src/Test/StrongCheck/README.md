@@ -181,9 +181,9 @@
 
     sample :: forall a. (Perturb a) => Number -> Landscape a -> [a]
 
-    somewhere :: forall a. (Arbitrary a, Perturb a) => Number -> Landscape a
+    somewhere :: forall a. (Arbitrary a, Perturb a) => Number -> Maybe (Landscape a)
 
-    somewhere' :: forall a. (Arbitrary a, Perturb a) => GenState -> Number -> Landscape a
+    somewhere' :: forall a. (Arbitrary a, Perturb a) => GenState -> Number -> Maybe (Landscape a)
 
     unDriverState :: forall a. DriverState a -> DriverStateRec a
 
