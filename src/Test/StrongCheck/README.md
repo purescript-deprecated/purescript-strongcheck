@@ -158,6 +158,8 @@
 
 ### Types
 
+    type Decay  = Number -> Number
+
     newtype DriverState a where
       DriverState :: DriverStateRec a -> DriverState a
 
@@ -166,28 +168,38 @@
     newtype Landscape a where
       Landscape :: Cofree L.List (DriverState a) -> Landscape a
 
+    type Variance  = Number
+
 
 ### Values
 
-    everywhere :: forall a. (Arbitrary a, Perturb a) => Number -> L.List (Landscape a)
+    decayHalf :: Decay
 
-    everywhere' :: forall a. (Arbitrary a, Perturb a) => GenState -> Number -> L.List (Landscape a)
+    decayThird :: Decay
+
+    everywhere :: forall a. (Arbitrary a, Perturb a) => Variance -> L.List (Landscape a)
+
+    everywhere' :: forall a. (Arbitrary a, Perturb a) => GenState -> Decay -> Variance -> L.List (Landscape a)
 
     moveTo :: forall a. (Eq a, Perturb a) => a -> Landscape a -> Maybe (Landscape a)
 
-    nearby :: forall a. (Perturb a) => a -> Number -> Landscape a
+    nearby :: forall a. (Perturb a) => a -> Variance -> Landscape a
 
-    nearby' :: forall a. (Perturb a) => a -> GenState -> Number -> Landscape a
+    nearby' :: forall a. (Perturb a) => GenState -> Decay -> a -> Variance -> Landscape a
 
-    sample :: forall a. (Perturb a) => Number -> Landscape a -> [a]
+    sampleHere :: forall a. (Perturb a) => Number -> Landscape a -> [a]
 
-    somewhere :: forall a. (Arbitrary a, Perturb a) => Number -> Maybe (Landscape a)
+    sampleHere' :: forall a. (Perturb a) => Number -> Landscape a -> [DriverState a]
 
-    somewhere' :: forall a. (Arbitrary a, Perturb a) => GenState -> Number -> Maybe (Landscape a)
+    somewhere :: forall a. (Arbitrary a, Perturb a) => Variance -> Maybe (Landscape a)
+
+    somewhere' :: forall a. (Arbitrary a, Perturb a) => GenState -> Decay -> Variance -> Maybe (Landscape a)
 
     unDriverState :: forall a. DriverState a -> DriverStateRec a
 
     unLandscape :: forall a. Landscape a -> Cofree L.List (DriverState a)
+
+    whereAt :: forall a. Landscape a -> a
 
 
 ## Module Test.StrongCheck.Perturb

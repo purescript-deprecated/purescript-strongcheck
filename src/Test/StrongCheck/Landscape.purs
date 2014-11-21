@@ -17,6 +17,7 @@ module Test.StrongCheck.Landscape
   , somewhere'
   , unDriverState
   , unLandscape
+  , whereAt
   ) where 
 
   import Data.Lazy (Lazy(), force, defer)
@@ -48,6 +49,9 @@ module Test.StrongCheck.Landscape
 
   decayThird :: Decay
   decayThird v = v / 3
+
+  whereAt :: forall a. Landscape a -> a
+  whereAt (Landscape v) = (unDriverState (head v)).value
 
   -- | Creates a landscape whose initial points are randomly chosen across
   -- | the entire landscape.
