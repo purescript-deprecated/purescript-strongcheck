@@ -148,13 +148,13 @@ main = do
   assert $ maybe false found (v Array.!! 0)
 
   trace "creating infinite bool landscape doesn't blow the stack"
-  assert $ isJust $ (somewhere 1 :: Maybe (Landscape Boolean))
+  assert $ isJust $ (somewhere 1 arbitrary :: Maybe (Landscape Boolean))
 
   trace "sampling 100 values produces 100 values"
-  assert $ ((==) 100 <<< Array.length <<< sampleHere 100 <$> (somewhere 1 :: Maybe (Landscape Boolean))) == Just true
+  assert $ ((==) 100 <<< Array.length <<< sampleHere 100 <$> (somewhere 1 arbitrary :: Maybe (Landscape Boolean))) == Just true
 
   trace "Can move to sampled value"
-  assert $ (do  l <- (somewhere 1 :: Maybe (Landscape Boolean))
+  assert $ (do  l <- (somewhere 1 arbitrary :: Maybe (Landscape Boolean))
                 x <- Array.head $ Array.drop 50 (sampleHere 100 l)
                 l <- moveTo x l
                 return true) == Just true

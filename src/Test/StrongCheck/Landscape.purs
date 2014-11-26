@@ -6,6 +6,7 @@ module Test.StrongCheck.Landscape
   , Landscape(..)
   , decayHalf
   , decayThird
+  , defaultDecay
   , everywhere
   , everywhere'
   , moveTo
@@ -33,7 +34,6 @@ module Test.StrongCheck.Landscape
   import qualified Data.Array as A
 
   import Test.StrongCheck.Perturb (Perturb, perturb)
-  import Test.StrongCheck (Arbitrary, arbitrary)
   import Test.StrongCheck.Gen (GenState(..), Gen(..), toLazyList, updateSeedState, unGenOut, applyGen, infinite)
 
   type DriverStateRec a = { value :: a, variance :: Number, state :: GenState }
@@ -50,13 +50,16 @@ module Test.StrongCheck.Landscape
   decayThird :: Decay
   decayThird v = v / 3
 
+  defaultDecay :: Decay
+  defaultDecay = decayHalf
+
   whereAt :: forall a. Landscape a -> a
   whereAt (Landscape v) = (unDriverState (head v)).value
 
   -- | Creates a landscape whose initial points are randomly chosen across
   -- | the entire landscape.
-  everywhere' :: forall a. (Arbitrary a, Perturb a) => GenState -> Decay -> Variance -> L.List (Landscape a)
-  everywhere' s d v = L.wrapEffect (go (infinite arbitrary) s)
+  everywhere' :: forall a. (Perturb a) => GenState -> Decay -> Variance -> Gen a -> L.List (Landscape a)
+  everywhere' s d v g = L.wrapEffect (go (infinite g) s)
     where go g s = defer \_ -> 
                       let o = unGenOut <$> runTrampoline (applyGen s g)
                       in  maybe L.nil 
@@ -67,17 +70,17 @@ module Test.StrongCheck.Landscape
 
   -- | Creates a landscape whose initial points are randomly chosen across
   -- | the entire landscape, using the default GenState and Decay.
-  everywhere :: forall a. (Arbitrary a, Perturb a) => Variance -> L.List (Landscape a)
+  everywhere :: forall a. (Perturb a) => Variance -> Gen a -> L.List (Landscape a)
   everywhere = everywhere' mempty decayHalf
 
   -- | Picks somewhere and forms a landscape around that location.
-  somewhere' :: forall a. (Arbitrary a, Perturb a) => GenState -> Decay -> Variance -> Maybe (Landscape a)
-  somewhere' s d = force <<< L.head <<< everywhere' s d
+  somewhere' :: forall a. (Perturb a) => GenState -> Decay -> Variance -> Gen a -> Maybe (Landscape a)
+  somewhere' s d v = force <<< L.head <<< everywhere' s d v
 
   -- | Picks somewhere and forms a landscape around that location, using the
   -- | default GenState and Decay.
-  somewhere :: forall a. (Arbitrary a, Perturb a) => Variance -> Maybe (Landscape a)
-  somewhere = somewhere' mempty decayHalf
+  somewhere :: forall a. (Perturb a) => Variance -> Gen a -> Maybe (Landscape a)
+  somewhere = somewhere' mempty defaultDecay
 
   -- | Creates a landscape that samples the area around a location.
   nearby' :: forall a. (Perturb a) => GenState -> Decay -> a -> Variance -> Landscape a
@@ -91,7 +94,7 @@ module Test.StrongCheck.Landscape
   -- | Creates a landscape that samples the area around a location, using the 
   -- | default GenState and Decay.
   nearby :: forall a. (Perturb a) => a -> Variance -> Landscape a
-  nearby = nearby' mempty decayHalf
+  nearby = nearby' mempty defaultDecay
 
   -- | Samples around the current location area, returning full state information.
   sampleHere' :: forall a. (Perturb a) => Number -> Landscape a -> [DriverState a]

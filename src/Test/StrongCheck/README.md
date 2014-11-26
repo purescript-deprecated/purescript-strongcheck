@@ -177,9 +177,11 @@
 
     decayThird :: Decay
 
-    everywhere :: forall a. (Arbitrary a, Perturb a) => Variance -> L.List (Landscape a)
+    defaultDecay :: Decay
 
-    everywhere' :: forall a. (Arbitrary a, Perturb a) => GenState -> Decay -> Variance -> L.List (Landscape a)
+    everywhere :: forall a. (Perturb a) => Variance -> Gen a -> L.List (Landscape a)
+
+    everywhere' :: forall a. (Perturb a) => GenState -> Decay -> Variance -> Gen a -> L.List (Landscape a)
 
     moveTo :: forall a. (Eq a, Perturb a) => a -> Landscape a -> Maybe (Landscape a)
 
@@ -191,9 +193,9 @@
 
     sampleHere' :: forall a. (Perturb a) => Number -> Landscape a -> [DriverState a]
 
-    somewhere :: forall a. (Arbitrary a, Perturb a) => Variance -> Maybe (Landscape a)
+    somewhere :: forall a. (Perturb a) => Variance -> Gen a -> Maybe (Landscape a)
 
-    somewhere' :: forall a. (Arbitrary a, Perturb a) => GenState -> Decay -> Variance -> Maybe (Landscape a)
+    somewhere' :: forall a. (Perturb a) => GenState -> Decay -> Variance -> Gen a -> Maybe (Landscape a)
 
     unDriverState :: forall a. DriverState a -> DriverStateRec a
 
