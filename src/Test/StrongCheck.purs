@@ -1,5 +1,7 @@
 module Test.StrongCheck
   ( (<?>)
+  , (===)
+  , (/==)
   , AlphaNumString(..)
   , Arbitrary
   , ArbEnum(..)
@@ -79,6 +81,14 @@ data Result = Success | Failed String
 (<?>) :: Boolean -> String -> Result
 (<?>) true  = const Success
 (<?>) false = Failed
+
+(===) :: forall a b. (Eq a, Show a) => a -> a -> Result
+(===) a b = a == b <?> msg
+  where msg = show a ++ " /= " ++ show b
+
+(/==) :: forall a b. (Eq a, Show a) => a -> a -> Result
+(/==) a b = a /= b <?> msg
+  where msg = show a ++ " == " ++ show b
 
 quickCheckPure :: forall prop. (Testable prop) => Number -> Seed -> prop -> [Result]
 quickCheckPure n s prop = runTrampoline $ sample' n (defState s) (test prop)
@@ -252,6 +262,10 @@ instance enumArbEnum :: (Enum a) => Enum (ArbEnum a) where
   pred (ArbEnum e) = ArbEnum <$> pred e
 
   succ (ArbEnum e) = ArbEnum <$> succ e
+
+  toEnum v = ArbEnum <$> toEnum v
+
+  fromEnum (ArbEnum e) = fromEnum e
 
 instance arbBoolean :: Arbitrary Boolean where
   arbitrary = do
