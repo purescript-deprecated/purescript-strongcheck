@@ -15,13 +15,9 @@ var paths = {
     ],
     dest: '',
     docs: {
-        'Test.StrongCheck': {
+        'StrongCheck': {
             dest: 'README.md',
-            src: 'src/Test/StrongCheck.purs'
-        },
-        'Test.StrongCheck.*': {
-            dest: 'src/Test/StrongCheck/README.md',
-            src: 'src/Test/StrongCheck/*.purs'
+            src: 'src/**/*.purs'
         }
     },
     test: 'test/**/*.purs'
@@ -79,10 +75,7 @@ gulp.task('test', function() {
         .pipe(run('node').exec());
 });
 
-gulp.task('docs-Test.StrongCheck', docs('Test.StrongCheck'));
-gulp.task('docs-Test.StrongCheck.*', docs('Test.StrongCheck.*'));
-
-gulp.task('docs', ['docs-Test.StrongCheck', 'docs-Test.StrongCheck.*']);
+gulp.task('docs', docs('StrongCheck'));
 
 gulp.task('watch-browser', function() {
     gulp.watch(paths.src, sequence('browser', 'docs'));
