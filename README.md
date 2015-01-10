@@ -1,5 +1,7 @@
 # Module Documentation
 
+For examples check out @paf31's post [here](https://gist.github.com/paf31/8e9177b20ee920480fbc#day-17---purescript-strongcheck).
+
 ## Module Test.StrongCheck
 
 ### Types
