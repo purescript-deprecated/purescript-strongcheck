@@ -2,715 +2,1380 @@
 
 ## Module Test.StrongCheck
 
-### Types
+#### `Arbitrary`
 
+``` purescript
+class Arbitrary t where
+  arbitrary :: Gen t
+```
 
-    newtype AlphaNumString where
-      AlphaNumString :: String -> AlphaNumString
 
+#### `CoArbitrary`
 
-    newtype ArbEnum a where
-      ArbEnum :: a -> ArbEnum a
+``` purescript
+class CoArbitrary t where
+  coarbitrary :: forall r. t -> Gen r -> Gen r
+```
 
 
-    newtype Negative where
-      Negative :: Number -> Negative
+#### `Testable`
 
+``` purescript
+class Testable prop where
+  test :: prop -> Gen Result
+```
 
-    newtype NonZero where
-      NonZero :: Number -> NonZero
 
+#### `AlphaNumString`
 
-    newtype Positive where
-      Positive :: Number -> Positive
+``` purescript
+newtype AlphaNumString
+  = AlphaNumString String
+```
 
 
-    type QC a = forall eff. Eff (err :: Exception, random :: Random, trace :: Trace | eff) a
+#### `Positive`
 
+``` purescript
+newtype Positive
+  = Positive Number
+```
 
-    data Result where
-      Success :: Result
-      Failed :: String -> Result
 
+#### `Negative`
 
-    newtype Signum where
-      Signum :: Number -> Signum
+``` purescript
+newtype Negative
+  = Negative Number
+```
 
 
-### Type Classes
+#### `NonZero`
 
+``` purescript
+newtype NonZero
+  = NonZero Number
+```
 
-    class Arbitrary t where
 
-      arbitrary :: Gen t
+#### `Signum`
 
+``` purescript
+newtype Signum
+  = Signum Number
+```
 
-    class CoArbitrary t where
 
-      coarbitrary :: forall r. t -> Gen r -> Gen r
+#### `ArbEnum`
 
+``` purescript
+newtype ArbEnum a
+  = ArbEnum a
+```
 
-    class Testable prop where
 
-      test :: prop -> Gen Result
+#### `QC`
 
+``` purescript
+type QC a = forall eff. Eff (err :: Exception, random :: Random, trace :: Trace | eff) a
+```
 
-### Type Class Instances
 
+#### `Result`
 
-    instance arbAlphaNumString :: Arbitrary AlphaNumString
+``` purescript
+data Result
+  = Success 
+  | Failed String
+```
 
 
-    instance arbArbEnum :: (Enum a) => Arbitrary (ArbEnum a)
+#### `(<?>)`
 
+``` purescript
+(<?>) :: Boolean -> String -> Result
+```
 
-    instance arbArray :: (Arbitrary a) => Arbitrary [a]
 
+#### `(===)`
 
-    instance arbBoolean :: Arbitrary Boolean
+``` purescript
+(===) :: forall a b. (Eq a, Show a) => a -> a -> Result
+```
 
 
-    instance arbChar :: Arbitrary Char
+#### `(/==)`
 
+``` purescript
+(/==) :: forall a b. (Eq a, Show a) => a -> a -> Result
+```
 
-    instance arbEither :: (Arbitrary a, Arbitrary b) => Arbitrary (Either a b)
 
+#### `quickCheckPure`
 
-    instance arbFunction :: (CoArbitrary a, Arbitrary b) => Arbitrary (a -> b)
+``` purescript
+quickCheckPure :: forall prop. (Testable prop) => Number -> Seed -> prop -> [Result]
+```
 
 
-    instance arbMaybe :: (Arbitrary a) => Arbitrary (Maybe a)
+#### `quickCheck'`
 
+``` purescript
+quickCheck' :: forall prop. (Testable prop) => Number -> prop -> QC Unit
+```
 
-    instance arbNegative :: Arbitrary Negative
 
+#### `quickCheck`
 
-    instance arbNonZero :: Arbitrary NonZero
+``` purescript
+quickCheck :: forall prop. (Testable prop) => prop -> QC Unit
+```
 
+Checks the proposition for 100 random values.
 
-    instance arbNumber :: Arbitrary Number
+#### `smallCheckPure`
 
+``` purescript
+smallCheckPure :: forall prop. (Testable prop) => Number -> prop -> [Result]
+```
 
-    instance arbPositive :: Arbitrary Positive
 
+#### `smallCheck`
 
-    instance arbSignum :: Arbitrary Signum
+``` purescript
+smallCheck :: forall prop. (Testable prop) => prop -> QC Unit
+```
 
+Exhaustively checks the proposition for all possible values. Assumes the
+generator is a finite generator.
 
-    instance arbString :: Arbitrary String
+#### `statCheckPure`
 
+``` purescript
+statCheckPure :: forall prop. (Testable prop) => Seed -> Number -> prop -> Result
+```
 
-    instance arbTuple :: (Arbitrary a, Arbitrary b) => Arbitrary (Tuple a b)
 
+#### `statCheck`
 
-    instance coarbAlphaNumString :: CoArbitrary AlphaNumString
+``` purescript
+statCheck :: forall prop. (Testable prop) => Number -> prop -> QC Unit
+```
 
+Checks that the proposition has a certain probability of being true for 
+arbitrary values.
 
-    instance coarbArbEnum :: (Enum a) => CoArbitrary (ArbEnum a)
+#### `assert`
 
+``` purescript
+assert :: forall prop. (Testable prop) => prop -> QC Unit
+```
 
-    instance coarbArray :: (CoArbitrary a) => CoArbitrary [a]
+Checks that the specified proposition holds. Useful for unit tests.
 
+#### `runArbEnum`
 
-    instance coarbBoolean :: CoArbitrary Boolean
+``` purescript
+runArbEnum :: forall a. ArbEnum a -> a
+```
 
 
-    instance coarbChar :: CoArbitrary Char
+#### `eqResult`
 
+``` purescript
+instance eqResult :: Eq Result
+```
 
-    instance coarbEither :: (CoArbitrary a, CoArbitrary b) => CoArbitrary (Either a b)
 
+#### `showResult`
 
-    instance coarbFunction :: (Arbitrary a, CoArbitrary b) => CoArbitrary (a -> b)
+``` purescript
+instance showResult :: Show Result
+```
 
 
-    instance coarbMaybe :: (CoArbitrary a) => CoArbitrary (Maybe a)
+#### `semigroupResult`
 
+``` purescript
+instance semigroupResult :: Semigroup Result
+```
 
-    instance coarbNegative :: CoArbitrary Negative
 
+#### `monoidResult`
 
-    instance coarbNonZero :: CoArbitrary NonZero
+``` purescript
+instance monoidResult :: Monoid Result
+```
 
 
-    instance coarbNumber :: CoArbitrary Number
+#### `arbNumber`
 
+``` purescript
+instance arbNumber :: Arbitrary Number
+```
 
-    instance coarbPositive :: CoArbitrary Positive
 
+#### `coarbNumber`
 
-    instance coarbSignum :: CoArbitrary Signum
+``` purescript
+instance coarbNumber :: CoArbitrary Number
+```
 
 
-    instance coarbString :: CoArbitrary String
+#### `arbPositive`
 
+``` purescript
+instance arbPositive :: Arbitrary Positive
+```
 
-    instance coarbTuple :: (CoArbitrary a, CoArbitrary b) => CoArbitrary (Tuple a b)
 
+#### `coarbPositive`
 
-    instance enumArbEnum :: (Enum a) => Enum (ArbEnum a)
+``` purescript
+instance coarbPositive :: CoArbitrary Positive
+```
 
 
-    instance eqArbEnum :: (Eq a) => Eq (ArbEnum a)
+#### `arbNegative`
 
+``` purescript
+instance arbNegative :: Arbitrary Negative
+```
 
-    instance eqResult :: Eq Result
 
+#### `coarbNegative`
 
-    instance monoidResult :: Monoid Result
+``` purescript
+instance coarbNegative :: CoArbitrary Negative
+```
 
 
-    instance ordArbEnum :: (Ord a) => Ord (ArbEnum a)
+#### `arbNonZero`
 
+``` purescript
+instance arbNonZero :: Arbitrary NonZero
+```
 
-    instance semigroupResult :: Semigroup Result
 
+#### `coarbNonZero`
 
-    instance showArbEnum :: (Show a) => Show (ArbEnum a)
+``` purescript
+instance coarbNonZero :: CoArbitrary NonZero
+```
 
 
-    instance showResult :: Show Result
+#### `arbSignum`
 
+``` purescript
+instance arbSignum :: Arbitrary Signum
+```
 
-    instance testableBoolean :: Testable Boolean
 
+#### `coarbSignum`
 
-    instance testableFunction :: (Arbitrary t, Testable prop) => Testable (t -> prop)
+``` purescript
+instance coarbSignum :: CoArbitrary Signum
+```
 
 
-    instance testableResult :: Testable Result
+#### `arbArbEnum`
 
+``` purescript
+instance arbArbEnum :: (Enum a) => Arbitrary (ArbEnum a)
+```
 
-### Values
 
+#### `coarbArbEnum`
 
-    (/==) :: forall a b. (Eq a, Show a) => a -> a -> Result
+``` purescript
+instance coarbArbEnum :: (Enum a) => CoArbitrary (ArbEnum a)
+```
 
 
-    (<?>) :: Boolean -> String -> Result
+#### `eqArbEnum`
 
+``` purescript
+instance eqArbEnum :: (Eq a) => Eq (ArbEnum a)
+```
 
-    (===) :: forall a b. (Eq a, Show a) => a -> a -> Result
 
-     | Checks that the specified proposition holds. Useful for unit tests.
+#### `ordArbEnum`
 
-    assert :: forall prop. (Testable prop) => prop -> QC Unit
+``` purescript
+instance ordArbEnum :: (Ord a) => Ord (ArbEnum a)
+```
 
-     | Checks the proposition for 100 random values.
 
-    quickCheck :: forall prop. (Testable prop) => prop -> QC Unit
+#### `showArbEnum`
 
+``` purescript
+instance showArbEnum :: (Show a) => Show (ArbEnum a)
+```
 
-    quickCheck' :: forall prop. (Testable prop) => Number -> prop -> QC Unit
 
+#### `enumArbEnum`
 
-    quickCheckPure :: forall prop. (Testable prop) => Number -> Seed -> prop -> [Result]
+``` purescript
+instance enumArbEnum :: (Enum a) => Enum (ArbEnum a)
+```
 
 
-    runArbEnum :: forall a. ArbEnum a -> a
+#### `arbBoolean`
 
-     | Exhaustively checks the proposition for all possible values. Assumes the
-     | generator is a finite generator.
+``` purescript
+instance arbBoolean :: Arbitrary Boolean
+```
 
-    smallCheck :: forall prop. (Testable prop) => prop -> QC Unit
 
+#### `coarbBoolean`
 
-    smallCheckPure :: forall prop. (Testable prop) => Number -> prop -> [Result]
+``` purescript
+instance coarbBoolean :: CoArbitrary Boolean
+```
 
-     | Checks that the proposition has a certain probability of being true for 
-     | arbitrary values.
 
-    statCheck :: forall prop. (Testable prop) => Number -> prop -> QC Unit
+#### `arbChar`
 
+``` purescript
+instance arbChar :: Arbitrary Char
+```
 
-    statCheckPure :: forall prop. (Testable prop) => Seed -> Number -> prop -> Result
+
+#### `coarbChar`
+
+``` purescript
+instance coarbChar :: CoArbitrary Char
+```
+
+
+#### `arbString`
+
+``` purescript
+instance arbString :: Arbitrary String
+```
+
+
+#### `coarbString`
+
+``` purescript
+instance coarbString :: CoArbitrary String
+```
+
+
+#### `arbAlphaNumString`
+
+``` purescript
+instance arbAlphaNumString :: Arbitrary AlphaNumString
+```
+
+
+#### `coarbAlphaNumString`
+
+``` purescript
+instance coarbAlphaNumString :: CoArbitrary AlphaNumString
+```
+
+
+#### `arbTuple`
+
+``` purescript
+instance arbTuple :: (Arbitrary a, Arbitrary b) => Arbitrary (Tuple a b)
+```
+
+
+#### `coarbTuple`
+
+``` purescript
+instance coarbTuple :: (CoArbitrary a, CoArbitrary b) => CoArbitrary (Tuple a b)
+```
+
+
+#### `arbEither`
+
+``` purescript
+instance arbEither :: (Arbitrary a, Arbitrary b) => Arbitrary (Either a b)
+```
+
+
+#### `coarbEither`
+
+``` purescript
+instance coarbEither :: (CoArbitrary a, CoArbitrary b) => CoArbitrary (Either a b)
+```
+
+
+#### `arbMaybe`
+
+``` purescript
+instance arbMaybe :: (Arbitrary a) => Arbitrary (Maybe a)
+```
+
+
+#### `coarbMaybe`
+
+``` purescript
+instance coarbMaybe :: (CoArbitrary a) => CoArbitrary (Maybe a)
+```
+
+
+#### `arbFunction`
+
+``` purescript
+instance arbFunction :: (CoArbitrary a, Arbitrary b) => Arbitrary (a -> b)
+```
+
+
+#### `coarbFunction`
+
+``` purescript
+instance coarbFunction :: (Arbitrary a, CoArbitrary b) => CoArbitrary (a -> b)
+```
+
+
+#### `arbArray`
+
+``` purescript
+instance arbArray :: (Arbitrary a) => Arbitrary [a]
+```
+
+
+#### `coarbArray`
+
+``` purescript
+instance coarbArray :: (CoArbitrary a) => CoArbitrary [a]
+```
+
+
+#### `testableResult`
+
+``` purescript
+instance testableResult :: Testable Result
+```
+
+
+#### `testableBoolean`
+
+``` purescript
+instance testableBoolean :: Testable Boolean
+```
+
+
+#### `testableFunction`
+
+``` purescript
+instance testableFunction :: (Arbitrary t, Testable prop) => Testable (t -> prop)
+```
+
 
 
 ## Module Test.StrongCheck.Gen
 
-### Types
+#### `Size`
 
+``` purescript
+type Size = Number
+```
 
-    type Gen a = GenT Trampoline a
 
+#### `Seed`
 
-    data GenOut a where
-      GenOut :: { value :: a, state :: GenState } -> GenOut a
+``` purescript
+type Seed = Number
+```
 
 
-    data GenState where
-      GenState :: { size :: Size, seed :: Seed } -> GenState
+#### `GenState`
 
+``` purescript
+data GenState
+  = GenState { size :: Size, seed :: Seed }
+```
 
-    data GenT f a where
-      GenT :: Mealy.MealyT f GenState (GenOut a) -> GenT f a
 
+#### `unGenState`
 
-    type Seed = Number
+``` purescript
+unGenState :: GenState -> { size :: Size, seed :: Seed }
+```
 
 
-    type Size = Number
+#### `GenOut`
 
+``` purescript
+data GenOut a
+  = GenOut { value :: a, state :: GenState }
+```
 
-### Type Class Instances
 
+#### `unGenOut`
 
-    instance altGenT :: (Monad f) => Alt (GenT f)
+``` purescript
+unGenOut :: forall a. GenOut a -> { value :: a, state :: GenState }
+```
 
 
-    instance alternativeGenT :: (Monad f) => Alternative (GenT f)
+#### `GenT`
 
+``` purescript
+data GenT f a
+  = GenT (Mealy.MealyT f GenState (GenOut a))
+```
 
-    instance applicativeGenT :: (Monad f) => Applicative (GenT f)
 
+#### `Gen`
 
-    instance applyGenOut :: Apply GenOut
+``` purescript
+type Gen a = GenT Trampoline a
+```
 
 
-    instance applyGenT :: (Monad f) => Apply (GenT f)
+#### `unGen`
 
+``` purescript
+unGen :: forall f a. GenT f a -> Mealy.MealyT f GenState (GenOut a)
+```
 
-    instance bindGenT :: (Monad f) => Bind (GenT f)
 
+#### `uniform`
 
-    instance functorGenOut :: Functor GenOut
+``` purescript
+uniform :: forall f. (Monad f) => GenT f Seed
+```
 
-     GenT instances
 
-    instance functorGenT :: (Monad f) => Functor (GenT f)
+#### `repeatable`
 
+``` purescript
+repeatable :: forall a b. (a -> Gen b) -> Gen (a -> b)
+```
 
-    instance monadGenT :: (Monad f) => Monad (GenT f)
+Creates a function generator that will always generate the same output
+for the same input.
 
+#### `stateful`
 
-    instance monadPlusGenT :: (Monad f) => MonadPlus (GenT f)
+``` purescript
+stateful :: forall f a. (Monad f) => (GenState -> GenT f a) -> GenT f a
+```
 
+Creates a generator that depends on access to the generator state.
 
-    instance monoidGenOut :: (Monoid a) => Monoid (GenOut a)
+#### `variant`
 
+``` purescript
+variant :: forall f a. (Monad f) => Seed -> GenT f a -> GenT f a
+```
 
-    instance monoidGenState :: Monoid GenState
+Fixes a generator on a certain variant, given by the specified seed.
 
+#### `sized`
 
-    instance monoidGenT :: (Monad f) => Monoid (GenT f a)
+``` purescript
+sized :: forall f a. (Monad f) => (Size -> GenT f a) -> GenT f a
+```
 
+Creates a generator that depends on the size parameter.
 
-    instance plusGenT :: (Monad f) => Plus (GenT f)
+#### `resize`
 
+``` purescript
+resize :: forall f a. (Monad f) => Size -> GenT f a -> GenT f a
+```
 
-    instance semigroupGenOut :: (Semigroup a) => Semigroup (GenOut a)
+Resizes the generator so the size parameter passed into the generator
+will be equal to the specified size.
 
+#### `charGen`
 
-    instance semigroupGenState :: Semigroup GenState
+``` purescript
+charGen :: forall f. (Monad f) => GenT f Char
+```
 
+A generator for characters.
 
-    instance semigroupGenT :: (Monad f) => Semigroup (GenT f a)
+#### `choose`
 
+``` purescript
+choose :: forall f. (Monad f) => Number -> Number -> GenT f Number
+```
 
-### Values
+Creates a generator that generates real numbers between the specified
+inclusive range.
 
-     | A deterministic generator that produces values from the specified array,
-     | in sequence.
+#### `chooseInt`
 
-    allInArray :: forall f a. (Monad f) => [a] -> GenT f a
+``` purescript
+chooseInt :: forall f. (Monad f) => Number -> Number -> GenT f Number
+```
 
-     | A deterministic generator that produces integers from the specified 
-     | inclusive range, in sequence.
+Creates a generator that generates integers between the specified
+inclusive range.
 
-    allInRange :: forall f a. (Monad f) => Number -> Number -> GenT f Number
+#### `oneOf`
 
-     | Applies a state to a generator to possibly produce the next state,
-     | a value, and the next generator.
+``` purescript
+oneOf :: forall f a. (Monad f) => GenT f a -> [GenT f a] -> GenT f a
+```
 
-    applyGen :: forall f a. (Monad f) => GenState -> GenT f a -> f (Maybe (GenOut (Tuple a (GenT f a))))
+Creates a generator that chooses another generator from the specified list
+at random, and then generates a value with that generator.
 
-     | Creates a generator of elements ranging from 0 to the maximum size.
+#### `frequency`
 
-    arrayOf :: forall f a. (Monad f) => GenT f a -> GenT f [a]
+``` purescript
+frequency :: forall f a. (Monad f) => Tuple Number (GenT f a) -> [Tuple Number (GenT f a)] -> GenT f a
+```
 
-     | Creates a generator of elements ranging from 1 to the maximum size.
+Generates elements by the specified frequencies (which will be normalized).
 
-    arrayOf1 :: forall f a. (Monad f) => GenT f a -> GenT f (Tuple a [a])
+#### `arrayOf`
 
-     | A generator for characters.
+``` purescript
+arrayOf :: forall f a. (Monad f) => GenT f a -> GenT f [a]
+```
 
-    charGen :: forall f. (Monad f) => GenT f Char
+Creates a generator of elements ranging from 0 to the maximum size.
 
-     | Creates a generator that generates real numbers between the specified
-     | inclusive range.
+#### `arrayOf1`
 
-    choose :: forall f. (Monad f) => Number -> Number -> GenT f Number
+``` purescript
+arrayOf1 :: forall f a. (Monad f) => GenT f a -> GenT f (Tuple a [a])
+```
 
-     | Creates a generator that generates integers between the specified 
-     | inclusive range.
+Creates a generator of elements ranging from 1 to the maximum size.
 
-    chooseInt :: forall f. (Monad f) => Number -> Number -> GenT f Number
+#### `vectorOf`
 
-     | Creates a generator that produces chunks of values in the specified size.
-     | Will extend the generator if necessary to produce a chunk of the specified
-     | size, but will not turn a finite generator into an infinite generator.
+``` purescript
+vectorOf :: forall f a. (Monad f) => Number -> GenT f a -> GenT f [a]
+```
 
-    chunked :: forall f a. (Monad f) => Number -> GenT f a -> GenT f [a]
+Creates a generator that generates arrays of some specified size.
 
-     | Drains a finite generator of all values. Or blows up if you called it on 
-     | an infinite generator.
+#### `elements`
 
-    collectAll :: forall f a. (Monad f) => GenState -> GenT f a -> f [a]
+``` purescript
+elements :: forall f a. (Monad f) => a -> [a] -> GenT f a
+```
 
-     | Drops a certain number of values from the generator. May produce
-     | an empty generator if called on a finite generator.
+Creates a generator that chooses an element from among a set of elements.
 
-    dropGen :: forall f a. (Monad f) => Number -> GenT f a -> GenT f a
+#### `perturbGen`
 
-     | Creates a generator that chooses an element from among a set of elements.
+``` purescript
+perturbGen :: forall f a. (Monad f) => Number -> GenT f a -> GenT f a
+```
 
-    elements :: forall f a. (Monad f) => a -> [a] -> GenT f a
 
-     | Extends a generator to produce *at least* the specified number of values.
-     | Will not turn a finite generator into an infinite one.
+#### `updateSeedState`
 
-    extend :: forall f a. (Monad f) => Number -> GenT f a -> GenT f a
+``` purescript
+updateSeedState :: GenState -> GenState
+```
 
-     | Folds over a generator to produce a value. Either the generator or the 
-     | user-defined function may halt the fold.
 
-    foldGen :: forall f a b. (Monad f) => (b -> a -> Maybe b) -> b -> GenState -> GenT f a -> f b
+#### `takeGen`
 
-     | Folds over a generator to produce a value. Either the generator or the 
-     | user-defined function may halt the fold. Returns not just the value
-     | created through folding, but also the successor generator.
+``` purescript
+takeGen :: forall f a. (Monad f) => Number -> GenT f a -> GenT f a
+```
 
-    foldGen' :: forall f a b. (Monad f) => (b -> a -> Maybe b) -> b -> GenState -> GenT f a -> f (Tuple b (GenT f a))
+Takes the first number of values from the generator. Will turn an infinite
+generator into a finite generator.
 
-     | Generates elements by the specified frequencies (which will be normalized).
+#### `dropGen`
 
-    frequency :: forall f a. (Monad f) => Tuple Number (GenT f a) -> [Tuple Number (GenT f a)] -> GenT f a
+``` purescript
+dropGen :: forall f a. (Monad f) => Number -> GenT f a -> GenT f a
+```
 
-     | Ensures that a given generator can produce an infinite number of values,
-     | assuming it can produce at least one.
+Drops a certain number of values from the generator. May produce
+an empty generator if called on a finite generator.
 
-    infinite :: forall f a. (Monad f) => GenT f a -> GenT f a
+#### `extend`
 
-     | Fairly interleaves two generators.
+``` purescript
+extend :: forall f a. (Monad f) => Number -> GenT f a -> GenT f a
+```
 
-    interleave :: forall f a. (Monad f) => GenT f a -> GenT f a -> GenT f a
+Extends a generator to produce *at least* the specified number of values.
+Will not turn a finite generator into an infinite one.
 
-     | A deterministic generator that produces all possible combinations of
-     | choosing exactly k elements from the specified array.
+#### `interleave`
 
-    nChooseK :: forall f a. (Monad f) => Number -> [a] -> GenT f [a]
+``` purescript
+interleave :: forall f a. (Monad f) => GenT f a -> GenT f a -> GenT f a
+```
 
-     | Creates a generator that chooses another generator from the specified list
-     | at random, and then generates a value with that generator.
+Fairly interleaves two generators.
 
-    oneOf :: forall f a. (Monad f) => GenT f a -> [GenT f a] -> GenT f a
+#### `infinite`
 
-     | A deterministic generator that produces all possible permutations of 
-     | the specified array.
+``` purescript
+infinite :: forall f a. (Monad f) => GenT f a -> GenT f a
+```
 
-    perms :: forall f a. (Monad f) => [a] -> GenT f [a]
+Ensures that a given generator can produce an infinite number of values,
+assuming it can produce at least one.
 
+#### `foldGen'`
 
-    perturbGen :: forall f a. (Monad f) => Number -> GenT f a -> GenT f a
+``` purescript
+foldGen' :: forall f a b. (Monad f) => (b -> a -> Maybe b) -> b -> GenState -> GenT f a -> f (Tuple b (GenT f a))
+```
 
-     | Creates a function generator that will always generate the same output 
-     | for the same input.
+Folds over a generator to produce a value. Either the generator or the
+user-defined function may halt the fold. Returns not just the value
+created through folding, but also the successor generator.
 
-    repeatable :: forall a b. (a -> Gen b) -> Gen (a -> b)
+#### `foldGen`
 
-     | Resizes the generator so the size parameter passed into the generator 
-     | will be equal to the specified size.
+``` purescript
+foldGen :: forall f a b. (Monad f) => (b -> a -> Maybe b) -> b -> GenState -> GenT f a -> f b
+```
 
-    resize :: forall f a. (Monad f) => Size -> GenT f a -> GenT f a
+Folds over a generator to produce a value. Either the generator or the
+user-defined function may halt the fold.
 
-     | Runs a generator to produce a specified number of values, returning both
-     | an array containing the values and the successor Gen that can be used to
-     | continue the generation process at a later time.
+#### `transGen`
 
-    runGen :: forall f a. (Monad f) => Number -> GenState -> GenT f a -> f (Tuple [a] (GenT f a))
+``` purescript
+transGen :: forall f a b c. (Monad f) => (b -> a -> Tuple b (Maybe c)) -> b -> GenT f a -> GenT f c
+```
 
-     | Samples a generator, producing the specified number of values. Uses 
-     | default settings for the initial generator state.
+Transforms one gen into another, passing along user-supplied state.
+Either the generator being transformed or the transforming function may
+halt the transformation.
 
-    sample :: forall f a. (Monad f) => Number -> GenT f a -> f [a]
+#### `perms`
 
-     | Samples a generator, producing the specified number of values.
+``` purescript
+perms :: forall f a. (Monad f) => [a] -> GenT f [a]
+```
 
-    sample' :: forall f a. (Monad f) => Number -> GenState -> GenT f a -> f [a]
+A deterministic generator that produces all possible permutations of
+the specified array.
 
-     | Shows a sample of values generated from the specified generator.
+#### `nChooseK`
 
-    showSample :: forall r a. (Show a) => Gen a -> Eff (trace :: Trace | r) Unit
+``` purescript
+nChooseK :: forall f a. (Monad f) => Number -> [a] -> GenT f [a]
+```
 
-     | Shows a sample of values generated from the specified generator.
+A deterministic generator that produces all possible combinations of
+choosing exactly k elements from the specified array.
 
-    showSample' :: forall r a. (Show a) => Number -> Gen a -> Eff (trace :: Trace | r) Unit
+#### `suchThat`
 
-     | Same as shuffle' but with default for the chunk size.
+``` purescript
+suchThat :: forall f a. (Monad f) => GenT f a -> (a -> Boolean) -> GenT f a
+```
 
-    shuffle :: forall f a. (Monad f) => GenT f a -> GenT f a
+Filters a generator to produce only values satisfying the specified
+predicate.
 
-     | Creates a generator that mixes up the order of the specified generator.
-     | This is achieved by chunking the generator with the specified size 
-     | and then shuffling each chunk before continuing to the next.
+#### `suchThatMaybe`
 
-    shuffle' :: forall f a. (Monad f) => Number -> GenT f a -> GenT f a
+``` purescript
+suchThatMaybe :: forall f a. (Monad f) => Number -> GenT f a -> (a -> Boolean) -> GenT f (Maybe a)
+```
 
-     | Creates a generator that produces shuffled versions of the provided array.
+Filters a generator to produce only values satisfying the specified
+predicate, but gives up and produces Nothing after the specified number
+of attempts.
 
-    shuffleArray :: forall f a. (Monad f) => [a] -> GenT f [a]
+#### `allInRange`
 
-     | Creates a generator that depends on the size parameter.
+``` purescript
+allInRange :: forall f a. (Monad f) => Number -> Number -> GenT f Number
+```
 
-    sized :: forall f a. (Monad f) => (Size -> GenT f a) -> GenT f a
+A deterministic generator that produces integers from the specified
+inclusive range, in sequence.
 
-     | Creates a generator that depends on access to the generator state.
+#### `allInArray`
 
-    stateful :: forall f a. (Monad f) => (GenState -> GenT f a) -> GenT f a
+``` purescript
+allInArray :: forall f a. (Monad f) => [a] -> GenT f a
+```
 
-     | Filters a generator to produce only values satisfying the specified 
-     | predicate.
+A deterministic generator that produces values from the specified array,
+in sequence.
 
-    suchThat :: forall f a. (Monad f) => GenT f a -> (a -> Boolean) -> GenT f a
+#### `collectAll`
 
-     | Filters a generator to produce only values satisfying the specified 
-     | predicate, but gives up and produces Nothing after the specified number
-     | of attempts.
+``` purescript
+collectAll :: forall f a. (Monad f) => GenState -> GenT f a -> f [a]
+```
 
-    suchThatMaybe :: forall f a. (Monad f) => Number -> GenT f a -> (a -> Boolean) -> GenT f (Maybe a)
+Drains a finite generator of all values. Or blows up if you called it on
+an infinite generator.
 
-     | Takes the first number of values from the generator. Will turn an infinite
-     | generator into a finite generator.
+#### `applyGen`
 
-    takeGen :: forall f a. (Monad f) => Number -> GenT f a -> GenT f a
+``` purescript
+applyGen :: forall f a. (Monad f) => GenState -> GenT f a -> f (Maybe (GenOut (Tuple a (GenT f a))))
+```
 
-     | Converts the generator into a function that, given the initial state, 
-     | returns a lazy list.
+Applies a state to a generator to possibly produce the next state,
+a value, and the next generator.
 
-    toLazyList :: forall a. Gen a -> GenState -> ListT.ListT Lazy a
+#### `sample'`
 
-     | Transforms one gen into another, passing along user-supplied state.
-     | Either the generator being transformed or the transforming function may
-     | halt the transformation.
+``` purescript
+sample' :: forall f a. (Monad f) => Number -> GenState -> GenT f a -> f [a]
+```
 
-    transGen :: forall f a b c. (Monad f) => (b -> a -> Tuple b (Maybe c)) -> b -> GenT f a -> GenT f c
+Samples a generator, producing the specified number of values.
 
+#### `sample`
 
-    unGen :: forall f a. GenT f a -> Mealy.MealyT f GenState (GenOut a)
+``` purescript
+sample :: forall f a. (Monad f) => Number -> GenT f a -> f [a]
+```
 
+Samples a generator, producing the specified number of values. Uses
+default settings for the initial generator state.
 
-    unGenOut :: forall a. GenOut a -> { value :: a, state :: GenState }
+#### `showSample'`
 
+``` purescript
+showSample' :: forall r a. (Show a) => Number -> Gen a -> Eff (trace :: Trace | r) Unit
+```
 
-    unGenState :: GenState -> { size :: Size, seed :: Seed }
+Shows a sample of values generated from the specified generator.
 
+#### `showSample`
 
-    uniform :: forall f. (Monad f) => GenT f Seed
+``` purescript
+showSample :: forall r a. (Show a) => Gen a -> Eff (trace :: Trace | r) Unit
+```
 
+Shows a sample of values generated from the specified generator.
 
-    updateSeedState :: GenState -> GenState
+#### `runGen`
 
-     | Fixes a generator on a certain variant, given by the specified seed.
+``` purescript
+runGen :: forall f a. (Monad f) => Number -> GenState -> GenT f a -> f (Tuple [a] (GenT f a))
+```
 
-    variant :: forall f a. (Monad f) => Seed -> GenT f a -> GenT f a
+Runs a generator to produce a specified number of values, returning both
+an array containing the values and the successor Gen that can be used to
+continue the generation process at a later time.
 
-     | Creates a generator that generates arrays of some specified size.
+#### `chunked`
 
-    vectorOf :: forall f a. (Monad f) => Number -> GenT f a -> GenT f [a]
+``` purescript
+chunked :: forall f a. (Monad f) => Number -> GenT f a -> GenT f [a]
+```
 
-     | Wraps an effect in a generator that ignores the input state.
+Creates a generator that produces chunks of values in the specified size.
+Will extend the generator if necessary to produce a chunk of the specified
+size, but will not turn a finite generator into an infinite generator.
 
-    wrapEffect :: forall f a. (Monad f) => f a -> GenT f a
+#### `wrapEffect`
+
+``` purescript
+wrapEffect :: forall f a. (Monad f) => f a -> GenT f a
+```
+
+Wraps an effect in a generator that ignores the input state.
+
+#### `shuffle'`
+
+``` purescript
+shuffle' :: forall f a. (Monad f) => Number -> GenT f a -> GenT f a
+```
+
+Creates a generator that mixes up the order of the specified generator.
+This is achieved by chunking the generator with the specified size
+and then shuffling each chunk before continuing to the next.
+
+#### `shuffle`
+
+``` purescript
+shuffle :: forall f a. (Monad f) => GenT f a -> GenT f a
+```
+
+Same as shuffle' but with default for the chunk size.
+
+#### `shuffleArray`
+
+``` purescript
+shuffleArray :: forall f a. (Monad f) => [a] -> GenT f [a]
+```
+
+Creates a generator that produces shuffled versions of the provided array.
+
+#### `toLazyList`
+
+``` purescript
+toLazyList :: forall a. Gen a -> GenState -> ListT.ListT Lazy a
+```
+
+Converts the generator into a function that, given the initial state,
+returns a lazy list.
+
+#### `semigroupGenState`
+
+``` purescript
+instance semigroupGenState :: Semigroup GenState
+```
+
+
+#### `monoidGenState`
+
+``` purescript
+instance monoidGenState :: Monoid GenState
+```
+
+
+#### `semigroupGenOut`
+
+``` purescript
+instance semigroupGenOut :: (Semigroup a) => Semigroup (GenOut a)
+```
+
+
+#### `monoidGenOut`
+
+``` purescript
+instance monoidGenOut :: (Monoid a) => Monoid (GenOut a)
+```
+
+
+#### `functorGenOut`
+
+``` purescript
+instance functorGenOut :: Functor GenOut
+```
+
+
+#### `applyGenOut`
+
+``` purescript
+instance applyGenOut :: Apply GenOut
+```
+
+
+#### `functorGenT`
+
+``` purescript
+instance functorGenT :: (Monad f) => Functor (GenT f)
+```
+
+#### `applyGenT`
+
+``` purescript
+instance applyGenT :: (Monad f) => Apply (GenT f)
+```
+
+
+#### `applicativeGenT`
+
+``` purescript
+instance applicativeGenT :: (Monad f) => Applicative (GenT f)
+```
+
+
+#### `semigroupGenT`
+
+``` purescript
+instance semigroupGenT :: (Monad f) => Semigroup (GenT f a)
+```
+
+
+#### `monoidGenT`
+
+``` purescript
+instance monoidGenT :: (Monad f) => Monoid (GenT f a)
+```
+
+
+#### `bindGenT`
+
+``` purescript
+instance bindGenT :: (Monad f) => Bind (GenT f)
+```
+
+
+#### `monadGenT`
+
+``` purescript
+instance monadGenT :: (Monad f) => Monad (GenT f)
+```
+
+
+#### `altGenT`
+
+``` purescript
+instance altGenT :: (Monad f) => Alt (GenT f)
+```
+
+
+#### `plusGenT`
+
+``` purescript
+instance plusGenT :: (Monad f) => Plus (GenT f)
+```
+
+
+#### `alternativeGenT`
+
+``` purescript
+instance alternativeGenT :: (Monad f) => Alternative (GenT f)
+```
+
+
+#### `monadPlusGenT`
+
+``` purescript
+instance monadPlusGenT :: (Monad f) => MonadPlus (GenT f)
+```
+
 
 
 ## Module Test.StrongCheck.Landscape
 
-### Types
+#### `DriverStateRec`
+
+``` purescript
+type DriverStateRec a = { state :: GenState, variance :: Number, value :: a }
+```
 
 
-    type Decay = Number -> Number
+#### `DriverState`
+
+``` purescript
+newtype DriverState a
+  = DriverState (DriverStateRec a)
+```
 
 
-    newtype DriverState a where
-      DriverState :: DriverStateRec a -> DriverState a
+#### `Landscape`
+
+``` purescript
+newtype Landscape a
+  = Landscape (Cofree L.List (DriverState a))
+```
 
 
-    type DriverStateRec a = { state :: GenState, variance :: Number, value :: a }
+#### `Variance`
+
+``` purescript
+type Variance = Number
+```
 
 
-    newtype Landscape a where
-      Landscape :: Cofree L.List (DriverState a) -> Landscape a
+#### `Decay`
+
+``` purescript
+type Decay = Number -> Number
+```
 
 
-    type Variance = Number
+#### `decayHalf`
+
+``` purescript
+decayHalf :: Decay
+```
 
 
-### Values
+#### `decayThird`
+
+``` purescript
+decayThird :: Decay
+```
 
 
-    decayHalf :: Decay
+#### `defaultDecay`
+
+``` purescript
+defaultDecay :: Decay
+```
 
 
-    decayThird :: Decay
+#### `whereAt`
+
+``` purescript
+whereAt :: forall a. Landscape a -> a
+```
 
 
-    defaultDecay :: Decay
+#### `everywhere'`
 
-     | Creates a landscape whose initial points are randomly chosen across
-     | the entire landscape, using the default GenState and Decay.
+``` purescript
+everywhere' :: forall a. (Perturb a) => GenState -> Decay -> Variance -> Gen a -> L.List (Landscape a)
+```
 
-    everywhere :: forall a. (Perturb a) => Variance -> Gen a -> L.List (Landscape a)
+Creates a landscape whose initial points are randomly chosen across
+the entire landscape.
 
-     | Creates a landscape whose initial points are randomly chosen across
-     | the entire landscape.
+#### `everywhere`
 
-    everywhere' :: forall a. (Perturb a) => GenState -> Decay -> Variance -> Gen a -> L.List (Landscape a)
+``` purescript
+everywhere :: forall a. (Perturb a) => Variance -> Gen a -> L.List (Landscape a)
+```
 
-     | Moves to a location in a landscape that was previously sampled.
+Creates a landscape whose initial points are randomly chosen across
+the entire landscape, using the default GenState and Decay.
 
-    moveTo :: forall a. (Eq a, Perturb a) => a -> Landscape a -> Maybe (Landscape a)
+#### `somewhere'`
 
-     | Creates a landscape that samples the area around a location, using the 
-     | default GenState and Decay.
+``` purescript
+somewhere' :: forall a. (Perturb a) => GenState -> Decay -> Variance -> Gen a -> Maybe (Landscape a)
+```
 
-    nearby :: forall a. (Perturb a) => a -> Variance -> Landscape a
+Picks somewhere and forms a landscape around that location.
 
-     | Creates a landscape that samples the area around a location.
+#### `somewhere`
 
-    nearby' :: forall a. (Perturb a) => GenState -> Decay -> a -> Variance -> Landscape a
+``` purescript
+somewhere :: forall a. (Perturb a) => Variance -> Gen a -> Maybe (Landscape a)
+```
 
-     | Samples around the current location area, returning just the values.
+Picks somewhere and forms a landscape around that location, using the
+default GenState and Decay.
 
-    sampleHere :: forall a. (Perturb a) => Number -> Landscape a -> [a]
+#### `nearby'`
 
-     | Samples around the current location area, returning full state information.
+``` purescript
+nearby' :: forall a. (Perturb a) => GenState -> Decay -> a -> Variance -> Landscape a
+```
 
-    sampleHere' :: forall a. (Perturb a) => Number -> Landscape a -> [DriverState a]
+Creates a landscape that samples the area around a location.
 
-     | Picks somewhere and forms a landscape around that location, using the
-     | default GenState and Decay.
+#### `nearby`
 
-    somewhere :: forall a. (Perturb a) => Variance -> Gen a -> Maybe (Landscape a)
+``` purescript
+nearby :: forall a. (Perturb a) => a -> Variance -> Landscape a
+```
 
-     | Picks somewhere and forms a landscape around that location.
+Creates a landscape that samples the area around a location, using the 
+default GenState and Decay.
 
-    somewhere' :: forall a. (Perturb a) => GenState -> Decay -> Variance -> Gen a -> Maybe (Landscape a)
+#### `sampleHere'`
+
+``` purescript
+sampleHere' :: forall a. (Perturb a) => Number -> Landscape a -> [DriverState a]
+```
+
+Samples around the current location area, returning full state information.
+
+#### `sampleHere`
+
+``` purescript
+sampleHere :: forall a. (Perturb a) => Number -> Landscape a -> [a]
+```
+
+Samples around the current location area, returning just the values.
+
+#### `moveTo`
+
+``` purescript
+moveTo :: forall a. (Eq a, Perturb a) => a -> Landscape a -> Maybe (Landscape a)
+```
+
+Moves to a location in a landscape that was previously sampled.
+
+#### `unDriverState`
+
+``` purescript
+unDriverState :: forall a. DriverState a -> DriverStateRec a
+```
 
 
-    unDriverState :: forall a. DriverState a -> DriverStateRec a
+#### `unLandscape`
 
+``` purescript
+unLandscape :: forall a. Landscape a -> Cofree L.List (DriverState a)
+```
 
-    unLandscape :: forall a. Landscape a -> Cofree L.List (DriverState a)
-
-
-    whereAt :: forall a. Landscape a -> a
 
 
 ## Module Test.StrongCheck.Perturb
 
-### Types
+#### `Attempts`
+
+``` purescript
+newtype Attempts
+  = Attempts Number
+```
 
 
-    newtype Attempts where
-      Attempts :: Number -> Attempts
+#### `Perturber`
+
+``` purescript
+newtype Perturber a
+  = Perturber (PerturberRec a)
+```
 
 
-    newtype Perturber a where
-      Perturber :: PerturberRec a -> Perturber a
+#### `PerturberRec`
+
+``` purescript
+type PerturberRec a = { dims :: a -> Number, dist :: a -> a -> Number, perturb :: Number -> a -> Gen a }
+```
 
 
-    type PerturberRec a = { dims :: a -> Number, dist :: a -> a -> Number, perturb :: Number -> a -> Gen a }
+#### `unPerturber`
+
+``` purescript
+unPerturber :: forall a. Perturber a -> PerturberRec a
+```
 
 
-### Type Classes
+#### `xmap`
 
-     | The class for things which can be perturbed.
-     |
-     | Laws:  
-     |   forall a, 0 >= n <= 1:  
-     |   ((>=) n) <<< dist a <$> (perturb n a) must be an infinite generator of `true` values.
+``` purescript
+xmap :: forall a b. (a -> b) -> (b -> a) -> Perturber a -> Perturber b
+```
 
-    class Perturb a where
+#### `Perturb`
 
-      perturber :: Perturber a
+``` purescript
+class Perturb a where
+  perturber :: Perturber a
+```
 
+The class for things which can be perturbed.
 
-### Type Class Instances
+Laws:
+  forall a, 0 >= n <= 1:
+  ((>=) n) <<< dist a <$> (perturb n a) must be an infinite generator of `true` values.
 
+#### `perturb`
 
-    instance perturbArbEnum :: (Enum a) => Perturb (ArbEnum a)
-
-
-    instance perturbArray :: (Perturb a) => Perturb [a]
-
-
-    instance perturbBoolean :: Perturb Boolean
-
-
-    instance perturbChar :: Perturb Char
+``` purescript
+perturb :: forall a. (Perturb a) => Number -> a -> Gen a
+```
 
 
-    instance perturbNumber :: Perturb Number
+#### `dist`
+
+``` purescript
+dist :: forall a. (Perturb a) => a -> a -> Number
+```
 
 
-    instance perturbString :: Perturb String
+#### `dims`
+
+``` purescript
+dims :: forall a. (Perturb a) => a -> Number
+```
 
 
-### Values
+#### `nonPerturber`
 
-     | Combines two perturbers to produce a perturber of the product
+``` purescript
+nonPerturber :: forall a. Perturber a
+```
 
-    (</\>) :: forall a b. Perturber a -> Perturber b -> Perturber (Tuple a b)
+Creates a perturber that perturbs nothing.
 
-     | Combines two perturbers to produce a perturber of the sum
+#### `searchIn'`
 
-    (<\/>) :: forall a b. Perturber a -> Perturber b -> Perturber (Either a b)
+``` purescript
+searchIn' :: forall a. (Perturb a) => Attempts -> Number -> (a -> Boolean) -> a -> Gen a
+```
 
-     | Creates a perturber for numbers that fall within the specified range.
+Given one example, searches for other examples that satisfy a provided
+boolean predicate.
 
-    bounded :: Number -> Number -> Perturber Number
+The search operates out-to-in, in an attempt to find examples that are
+as far removed from the provided example as possible. The sampling size
+parameter determines how many samples to take at every level of
+searching, while the attempts parameter determines how many levels.
 
-     | Creates a perturber for integers that fall within the specified range.
+#### `searchIn`
 
-    boundedInt :: Number -> Number -> Perturber Number
+``` purescript
+searchIn :: forall a. (Perturb a) => (a -> Boolean) -> a -> Gen a
+```
+
+The same as search', but uses defaults for attempt count and sample size.
+Will search a total of 10,000 examples before giving up.
+
+#### `(</\>)`
+
+``` purescript
+(</\>) :: forall a b. Perturber a -> Perturber b -> Perturber (Tuple a b)
+```
+
+Combines two perturbers to produce a perturber of the product
+
+#### `(<\/>)`
+
+``` purescript
+(<\/>) :: forall a b. Perturber a -> Perturber b -> Perturber (Either a b)
+```
+
+Combines two perturbers to produce a perturber of the sum
+
+#### `bounded`
+
+``` purescript
+bounded :: Number -> Number -> Perturber Number
+```
+
+Creates a perturber for numbers that fall within the specified range.
+
+#### `boundedInt`
+
+``` purescript
+boundedInt :: Number -> Number -> Perturber Number
+```
+
+Creates a perturber for integers that fall within the specified range.
+
+#### `enumerated`
+
+``` purescript
+enumerated :: forall a. (Eq a) => a -> [a] -> Perturber a
+```
 
 
-    dims :: forall a. (Perturb a) => a -> Number
+#### `perturbArbEnum`
+
+``` purescript
+instance perturbArbEnum :: (Enum a) => Perturb (ArbEnum a)
+```
 
 
-    dist :: forall a. (Perturb a) => a -> a -> Number
+#### `perturbNumber`
+
+``` purescript
+instance perturbNumber :: Perturb Number
+```
 
 
-    enumerated :: forall a. (Eq a) => a -> [a] -> Perturber a
+#### `perturbArray`
 
-     | Creates a perturber that perturbs nothing.
-
-    nonPerturber :: forall a. Perturber a
-
-
-    perturb :: forall a. (Perturb a) => Number -> a -> Gen a
-
-     | The same as search', but uses defaults for attempt count and sample size.
-     | Will search a total of 10,000 examples before giving up.
-
-    searchIn :: forall a. (Perturb a) => (a -> Boolean) -> a -> Gen a
-
-     | Given one example, searches for other examples that satisfy a provided
-     | boolean predicate.
-     | 
-     | The search operates out-to-in, in an attempt to find examples that are 
-     | as far removed from the provided example as possible. The sampling size
-     | parameter determines how many samples to take at every level of 
-     | searching, while the attempts parameter determines how many levels.
-
-    searchIn' :: forall a. (Perturb a) => Attempts -> Number -> (a -> Boolean) -> a -> Gen a
+``` purescript
+instance perturbArray :: (Perturb a) => Perturb [a]
+```
 
 
-    unPerturber :: forall a. Perturber a -> PerturberRec a
+#### `perturbChar`
 
-     TODO: Move to Data.Functor.Invariant
+``` purescript
+instance perturbChar :: Perturb Char
+```
 
-    xmap :: forall a b. (a -> b) -> (b -> a) -> Perturber a -> Perturber b
+
+#### `perturbBoolean`
+
+``` purescript
+instance perturbBoolean :: Perturb Boolean
+```
+
+
+#### `perturbString`
+
+``` purescript
+instance perturbString :: Perturb String
+```
+
 
 
 
