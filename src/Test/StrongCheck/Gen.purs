@@ -61,6 +61,7 @@ import Data.Tuple
 import Data.Lazy
 import Data.Char
 import Data.Profunctor
+import Data.Profunctor.Strong
 import Data.Monoid
 import Data.Monoid.Additive
 import Data.Maybe
@@ -72,7 +73,6 @@ import qualified Data.Machine.Mealy as Mealy
 
 import Control.Monad.Free
 import Control.Monad.Trampoline
-import Control.Arrow
 import Control.Monad
 import qualified Control.Monad.ListT as ListT
 import Control.Bind
