@@ -2,75 +2,11 @@
 
 ## Module Test.StrongCheck
 
-#### `Arbitrary`
-
-``` purescript
-class Arbitrary t where
-  arbitrary :: Gen t
-```
-
-
-#### `CoArbitrary`
-
-``` purescript
-class CoArbitrary t where
-  coarbitrary :: forall r. t -> Gen r -> Gen r
-```
-
-
 #### `Testable`
 
 ``` purescript
 class Testable prop where
   test :: prop -> Gen Result
-```
-
-
-#### `AlphaNumString`
-
-``` purescript
-newtype AlphaNumString
-  = AlphaNumString String
-```
-
-
-#### `Positive`
-
-``` purescript
-newtype Positive
-  = Positive Number
-```
-
-
-#### `Negative`
-
-``` purescript
-newtype Negative
-  = Negative Number
-```
-
-
-#### `NonZero`
-
-``` purescript
-newtype NonZero
-  = NonZero Number
-```
-
-
-#### `Signum`
-
-``` purescript
-newtype Signum
-  = Signum Number
-```
-
-
-#### `ArbEnum`
-
-``` purescript
-newtype ArbEnum a
-  = ArbEnum a
 ```
 
 
@@ -114,14 +50,14 @@ data Result
 #### `quickCheckPure`
 
 ``` purescript
-quickCheckPure :: forall prop. (Testable prop) => Number -> Seed -> prop -> [Result]
+quickCheckPure :: forall prop. (Testable prop) => Int -> Seed -> prop -> [Result]
 ```
 
 
 #### `quickCheck'`
 
 ``` purescript
-quickCheck' :: forall prop. (Testable prop) => Number -> prop -> QC Unit
+quickCheck' :: forall prop. (Testable prop) => Int -> prop -> QC Unit
 ```
 
 
@@ -136,7 +72,7 @@ Checks the proposition for 100 random values.
 #### `smallCheckPure`
 
 ``` purescript
-smallCheckPure :: forall prop. (Testable prop) => Number -> prop -> [Result]
+smallCheckPure :: forall prop. (Testable prop) => Int -> prop -> [Result]
 ```
 
 
@@ -162,7 +98,7 @@ statCheckPure :: forall prop. (Testable prop) => Seed -> Number -> prop -> Resul
 statCheck :: forall prop. (Testable prop) => Number -> prop -> QC Unit
 ```
 
-Checks that the proposition has a certain probability of being true for 
+Checks that the proposition has a certain probability of being true for
 arbitrary values.
 
 #### `assert`
@@ -172,13 +108,6 @@ assert :: forall prop. (Testable prop) => prop -> QC Unit
 ```
 
 Checks that the specified proposition holds. Useful for unit tests.
-
-#### `runArbEnum`
-
-``` purescript
-runArbEnum :: forall a. ArbEnum a -> a
-```
-
 
 #### `eqResult`
 
@@ -208,244 +137,6 @@ instance monoidResult :: Monoid Result
 ```
 
 
-#### `arbNumber`
-
-``` purescript
-instance arbNumber :: Arbitrary Number
-```
-
-
-#### `coarbNumber`
-
-``` purescript
-instance coarbNumber :: CoArbitrary Number
-```
-
-
-#### `arbPositive`
-
-``` purescript
-instance arbPositive :: Arbitrary Positive
-```
-
-
-#### `coarbPositive`
-
-``` purescript
-instance coarbPositive :: CoArbitrary Positive
-```
-
-
-#### `arbNegative`
-
-``` purescript
-instance arbNegative :: Arbitrary Negative
-```
-
-
-#### `coarbNegative`
-
-``` purescript
-instance coarbNegative :: CoArbitrary Negative
-```
-
-
-#### `arbNonZero`
-
-``` purescript
-instance arbNonZero :: Arbitrary NonZero
-```
-
-
-#### `coarbNonZero`
-
-``` purescript
-instance coarbNonZero :: CoArbitrary NonZero
-```
-
-
-#### `arbSignum`
-
-``` purescript
-instance arbSignum :: Arbitrary Signum
-```
-
-
-#### `coarbSignum`
-
-``` purescript
-instance coarbSignum :: CoArbitrary Signum
-```
-
-
-#### `arbArbEnum`
-
-``` purescript
-instance arbArbEnum :: (Enum a) => Arbitrary (ArbEnum a)
-```
-
-
-#### `coarbArbEnum`
-
-``` purescript
-instance coarbArbEnum :: (Enum a) => CoArbitrary (ArbEnum a)
-```
-
-
-#### `eqArbEnum`
-
-``` purescript
-instance eqArbEnum :: (Eq a) => Eq (ArbEnum a)
-```
-
-
-#### `ordArbEnum`
-
-``` purescript
-instance ordArbEnum :: (Ord a) => Ord (ArbEnum a)
-```
-
-
-#### `showArbEnum`
-
-``` purescript
-instance showArbEnum :: (Show a) => Show (ArbEnum a)
-```
-
-
-#### `enumArbEnum`
-
-``` purescript
-instance enumArbEnum :: (Enum a) => Enum (ArbEnum a)
-```
-
-
-#### `arbBoolean`
-
-``` purescript
-instance arbBoolean :: Arbitrary Boolean
-```
-
-
-#### `coarbBoolean`
-
-``` purescript
-instance coarbBoolean :: CoArbitrary Boolean
-```
-
-
-#### `arbChar`
-
-``` purescript
-instance arbChar :: Arbitrary Char
-```
-
-
-#### `coarbChar`
-
-``` purescript
-instance coarbChar :: CoArbitrary Char
-```
-
-
-#### `arbString`
-
-``` purescript
-instance arbString :: Arbitrary String
-```
-
-
-#### `coarbString`
-
-``` purescript
-instance coarbString :: CoArbitrary String
-```
-
-
-#### `arbAlphaNumString`
-
-``` purescript
-instance arbAlphaNumString :: Arbitrary AlphaNumString
-```
-
-
-#### `coarbAlphaNumString`
-
-``` purescript
-instance coarbAlphaNumString :: CoArbitrary AlphaNumString
-```
-
-
-#### `arbTuple`
-
-``` purescript
-instance arbTuple :: (Arbitrary a, Arbitrary b) => Arbitrary (Tuple a b)
-```
-
-
-#### `coarbTuple`
-
-``` purescript
-instance coarbTuple :: (CoArbitrary a, CoArbitrary b) => CoArbitrary (Tuple a b)
-```
-
-
-#### `arbEither`
-
-``` purescript
-instance arbEither :: (Arbitrary a, Arbitrary b) => Arbitrary (Either a b)
-```
-
-
-#### `coarbEither`
-
-``` purescript
-instance coarbEither :: (CoArbitrary a, CoArbitrary b) => CoArbitrary (Either a b)
-```
-
-
-#### `arbMaybe`
-
-``` purescript
-instance arbMaybe :: (Arbitrary a) => Arbitrary (Maybe a)
-```
-
-
-#### `coarbMaybe`
-
-``` purescript
-instance coarbMaybe :: (CoArbitrary a) => CoArbitrary (Maybe a)
-```
-
-
-#### `arbFunction`
-
-``` purescript
-instance arbFunction :: (CoArbitrary a, Arbitrary b) => Arbitrary (a -> b)
-```
-
-
-#### `coarbFunction`
-
-``` purescript
-instance coarbFunction :: (Arbitrary a, CoArbitrary b) => CoArbitrary (a -> b)
-```
-
-
-#### `arbArray`
-
-``` purescript
-instance arbArray :: (Arbitrary a) => Arbitrary [a]
-```
-
-
-#### `coarbArray`
-
-``` purescript
-instance coarbArray :: (CoArbitrary a) => CoArbitrary [a]
-```
-
-
 #### `testableResult`
 
 ``` purescript
@@ -468,19 +159,206 @@ instance testableFunction :: (Arbitrary t, Testable prop) => Testable (t -> prop
 
 
 
+## Module Test.StrongCheck.Arbitrary
+
+#### `Arbitrary`
+
+``` purescript
+class Arbitrary t where
+  arbitrary :: Gen t
+```
+
+The `Arbitrary` class represents those types whose values can be
+_randomly-generated_.
+
+`arbitrary` uses the `Gen` monad to express a random generator for
+the type `t`. Combinators in the `Test.QuickCheck.Gen`
+module can be used to construct random generators.
+
+#### `CoArbitrary`
+
+``` purescript
+class CoArbitrary t where
+  coarbitrary :: forall r. t -> Gen r -> Gen r
+```
+
+The `CoArbitrary` class represents types which appear on the left of
+an `Arbitrary` function arrow.
+
+To construct an `Arbitrary` instance for the type `a -> b`, we need to
+use the input of type `a` to _perturb_ a random generator for `b`. This
+is the role of the `coarbitrary` function.
+
+`CoArbitrary` instances can be written using the `perturbGen` function.
+
+#### `arbBoolean`
+
+``` purescript
+instance arbBoolean :: Arbitrary Boolean
+```
+
+
+#### `coarbBoolean`
+
+``` purescript
+instance coarbBoolean :: CoArbitrary Boolean
+```
+
+
+#### `arbNumber`
+
+``` purescript
+instance arbNumber :: Arbitrary Number
+```
+
+
+#### `coarbNumber`
+
+``` purescript
+instance coarbNumber :: CoArbitrary Number
+```
+
+
+#### `arbInt`
+
+``` purescript
+instance arbInt :: Arbitrary Int
+```
+
+
+#### `coarbInt`
+
+``` purescript
+instance coarbInt :: CoArbitrary Int
+```
+
+
+#### `arbString`
+
+``` purescript
+instance arbString :: Arbitrary String
+```
+
+
+#### `coarbString`
+
+``` purescript
+instance coarbString :: CoArbitrary String
+```
+
+
+#### `arbChar`
+
+``` purescript
+instance arbChar :: Arbitrary Char
+```
+
+
+#### `coarbChar`
+
+``` purescript
+instance coarbChar :: CoArbitrary Char
+```
+
+
+#### `arbUnit`
+
+``` purescript
+instance arbUnit :: Arbitrary Unit
+```
+
+
+#### `coarbUnit`
+
+``` purescript
+instance coarbUnit :: CoArbitrary Unit
+```
+
+
+#### `arbArray`
+
+``` purescript
+instance arbArray :: (Arbitrary a) => Arbitrary [a]
+```
+
+
+#### `coarbArray`
+
+``` purescript
+instance coarbArray :: (CoArbitrary a) => CoArbitrary [a]
+```
+
+
+#### `arbFunction`
+
+``` purescript
+instance arbFunction :: (CoArbitrary a, Arbitrary b) => Arbitrary (a -> b)
+```
+
+
+#### `coarbFunction`
+
+``` purescript
+instance coarbFunction :: (Arbitrary a, CoArbitrary b) => CoArbitrary (a -> b)
+```
+
+
+#### `arbTuple`
+
+``` purescript
+instance arbTuple :: (Arbitrary a, Arbitrary b) => Arbitrary (Tuple a b)
+```
+
+
+#### `coarbTuple`
+
+``` purescript
+instance coarbTuple :: (CoArbitrary a, CoArbitrary b) => CoArbitrary (Tuple a b)
+```
+
+
+#### `arbMaybe`
+
+``` purescript
+instance arbMaybe :: (Arbitrary a) => Arbitrary (Maybe a)
+```
+
+
+#### `coarbMaybe`
+
+``` purescript
+instance coarbMaybe :: (CoArbitrary a) => CoArbitrary (Maybe a)
+```
+
+
+#### `arbEither`
+
+``` purescript
+instance arbEither :: (Arbitrary a, Arbitrary b) => Arbitrary (Either a b)
+```
+
+
+#### `coarbEither`
+
+``` purescript
+instance coarbEither :: (CoArbitrary a, CoArbitrary b) => CoArbitrary (Either a b)
+```
+
+
+#### `maxNumber`
+
+``` purescript
+maxNumber :: Number
+```
+
+
+
 ## Module Test.StrongCheck.Gen
 
 #### `Size`
 
 ``` purescript
-type Size = Number
-```
-
-
-#### `Seed`
-
-``` purescript
-type Seed = Number
+type Size = Int
 ```
 
 
@@ -539,7 +417,7 @@ unGen :: forall f a. GenT f a -> Mealy.MealyT f GenState (GenOut a)
 #### `uniform`
 
 ``` purescript
-uniform :: forall f. (Monad f) => GenT f Seed
+uniform :: forall f. (Monad f) => GenT f Number
 ```
 
 
@@ -605,7 +483,7 @@ inclusive range.
 #### `chooseInt`
 
 ``` purescript
-chooseInt :: forall f. (Monad f) => Number -> Number -> GenT f Number
+chooseInt :: forall f. (Monad f) => Int -> Int -> GenT f Int
 ```
 
 Creates a generator that generates integers between the specified
@@ -623,7 +501,7 @@ at random, and then generates a value with that generator.
 #### `frequency`
 
 ``` purescript
-frequency :: forall f a. (Monad f) => Tuple Number (GenT f a) -> [Tuple Number (GenT f a)] -> GenT f a
+frequency :: forall f a. (Monad f) => Tuple Int (GenT f a) -> [Tuple Int (GenT f a)] -> GenT f a
 ```
 
 Generates elements by the specified frequencies (which will be normalized).
@@ -647,7 +525,7 @@ Creates a generator of elements ranging from 1 to the maximum size.
 #### `vectorOf`
 
 ``` purescript
-vectorOf :: forall f a. (Monad f) => Number -> GenT f a -> GenT f [a]
+vectorOf :: forall f a. (Monad f) => Int -> GenT f a -> GenT f [a]
 ```
 
 Creates a generator that generates arrays of some specified size.
@@ -695,7 +573,7 @@ an empty generator if called on a finite generator.
 #### `extend`
 
 ``` purescript
-extend :: forall f a. (Monad f) => Number -> GenT f a -> GenT f a
+extend :: forall f a. (Monad f) => Int -> GenT f a -> GenT f a
 ```
 
 Extends a generator to produce *at least* the specified number of values.
@@ -759,7 +637,7 @@ the specified array.
 #### `nChooseK`
 
 ``` purescript
-nChooseK :: forall f a. (Monad f) => Number -> [a] -> GenT f [a]
+nChooseK :: forall f a. (Monad f) => Int -> [a] -> GenT f [a]
 ```
 
 A deterministic generator that produces all possible combinations of
@@ -823,7 +701,7 @@ a value, and the next generator.
 #### `sample'`
 
 ``` purescript
-sample' :: forall f a. (Monad f) => Number -> GenState -> GenT f a -> f [a]
+sample' :: forall f a. (Monad f) => Int -> GenState -> GenT f a -> f [a]
 ```
 
 Samples a generator, producing the specified number of values.
@@ -831,7 +709,7 @@ Samples a generator, producing the specified number of values.
 #### `sample`
 
 ``` purescript
-sample :: forall f a. (Monad f) => Number -> GenT f a -> f [a]
+sample :: forall f a. (Monad f) => Int -> GenT f a -> f [a]
 ```
 
 Samples a generator, producing the specified number of values. Uses
@@ -840,7 +718,7 @@ default settings for the initial generator state.
 #### `showSample'`
 
 ``` purescript
-showSample' :: forall r a. (Show a) => Number -> Gen a -> Eff (trace :: Trace | r) Unit
+showSample' :: forall r a. (Show a) => Int -> Gen a -> Eff (trace :: Trace | r) Unit
 ```
 
 Shows a sample of values generated from the specified generator.
@@ -856,7 +734,7 @@ Shows a sample of values generated from the specified generator.
 #### `runGen`
 
 ``` purescript
-runGen :: forall f a. (Monad f) => Number -> GenState -> GenT f a -> f (Tuple [a] (GenT f a))
+runGen :: forall f a. (Monad f) => Int -> GenState -> GenT f a -> f (Tuple [a] (GenT f a))
 ```
 
 Runs a generator to produce a specified number of values, returning both
@@ -866,7 +744,7 @@ continue the generation process at a later time.
 #### `chunked`
 
 ``` purescript
-chunked :: forall f a. (Monad f) => Number -> GenT f a -> GenT f [a]
+chunked :: forall f a. (Monad f) => Int -> GenT f a -> GenT f [a]
 ```
 
 Creates a generator that produces chunks of values in the specified size.
@@ -884,7 +762,7 @@ Wraps an effect in a generator that ignores the input state.
 #### `shuffle'`
 
 ``` purescript
-shuffle' :: forall f a. (Monad f) => Number -> GenT f a -> GenT f a
+shuffle' :: forall f a. (Monad f) => Int -> GenT f a -> GenT f a
 ```
 
 Creates a generator that mixes up the order of the specified generator.
@@ -1151,13 +1029,13 @@ Creates a landscape that samples the area around a location.
 nearby :: forall a. (Perturb a) => a -> Variance -> Landscape a
 ```
 
-Creates a landscape that samples the area around a location, using the 
+Creates a landscape that samples the area around a location, using the
 default GenState and Decay.
 
 #### `sampleHere'`
 
 ``` purescript
-sampleHere' :: forall a. (Perturb a) => Number -> Landscape a -> [DriverState a]
+sampleHere' :: forall a. (Perturb a) => Int -> Landscape a -> [DriverState a]
 ```
 
 Samples around the current location area, returning full state information.
@@ -1165,7 +1043,7 @@ Samples around the current location area, returning full state information.
 #### `sampleHere`
 
 ``` purescript
-sampleHere :: forall a. (Perturb a) => Number -> Landscape a -> [a]
+sampleHere :: forall a. (Perturb a) => Int -> Landscape a -> [a]
 ```
 
 Samples around the current location area, returning just the values.
@@ -1193,13 +1071,58 @@ unLandscape :: forall a. Landscape a -> Cofree L.List (DriverState a)
 
 
 
+## Module Test.StrongCheck.LCG
+
+#### `Seed`
+
+``` purescript
+type Seed = Int
+```
+
+
+#### `lcgM`
+
+``` purescript
+lcgM :: Seed
+```
+
+
+#### `lcgC`
+
+``` purescript
+lcgC :: Seed
+```
+
+
+#### `lcgN`
+
+``` purescript
+lcgN :: Seed
+```
+
+
+#### `lcgNext`
+
+``` purescript
+lcgNext :: Seed -> Seed
+```
+
+
+#### `randomSeed`
+
+``` purescript
+randomSeed :: forall e. Eff (random :: Random | e) Seed
+```
+
+
+
 ## Module Test.StrongCheck.Perturb
 
 #### `Attempts`
 
 ``` purescript
 newtype Attempts
-  = Attempts Number
+  = Attempts Int
 ```
 
 
@@ -1225,11 +1148,12 @@ unPerturber :: forall a. Perturber a -> PerturberRec a
 ```
 
 
-#### `xmap`
+#### `invariantPerturber`
 
 ``` purescript
-xmap :: forall a b. (a -> b) -> (b -> a) -> Perturber a -> Perturber b
+instance invariantPerturber :: Invariant Perturber
 ```
+
 
 #### `Perturb`
 
@@ -1276,7 +1200,7 @@ Creates a perturber that perturbs nothing.
 #### `searchIn'`
 
 ``` purescript
-searchIn' :: forall a. (Perturb a) => Attempts -> Number -> (a -> Boolean) -> a -> Gen a
+searchIn' :: forall a. (Perturb a) => Attempts -> Int -> (a -> Boolean) -> a -> Gen a
 ```
 
 Given one example, searches for other examples that satisfy a provided
@@ -1374,6 +1298,200 @@ instance perturbBoolean :: Perturb Boolean
 
 ``` purescript
 instance perturbString :: Perturb String
+```
+
+
+
+## Module Test.StrongCheck.Data.AlphaNumString
+
+#### `AlphaNumString`
+
+``` purescript
+newtype AlphaNumString
+  = AlphaNumString String
+```
+
+A newtype for `String` whose `Arbitrary` instance generated random
+alphanumeric strings.
+
+#### `arbAlphaNumString`
+
+``` purescript
+instance arbAlphaNumString :: Arbitrary AlphaNumString
+```
+
+
+#### `coarbAlphaNumString`
+
+``` purescript
+instance coarbAlphaNumString :: CoArbitrary AlphaNumString
+```
+
+
+
+## Module Test.StrongCheck.Data.ArbEnum
+
+#### `ArbEnum`
+
+``` purescript
+newtype ArbEnum a
+  = ArbEnum a
+```
+
+
+#### `runArbEnum`
+
+``` purescript
+runArbEnum :: forall a. ArbEnum a -> a
+```
+
+
+#### `arbArbEnum`
+
+``` purescript
+instance arbArbEnum :: (Enum a) => Arbitrary (ArbEnum a)
+```
+
+
+#### `coarbArbEnum`
+
+``` purescript
+instance coarbArbEnum :: (Enum a) => CoArbitrary (ArbEnum a)
+```
+
+
+#### `eqArbEnum`
+
+``` purescript
+instance eqArbEnum :: (Eq a) => Eq (ArbEnum a)
+```
+
+
+#### `ordArbEnum`
+
+``` purescript
+instance ordArbEnum :: (Ord a) => Ord (ArbEnum a)
+```
+
+
+#### `boundedArbEnum`
+
+``` purescript
+instance boundedArbEnum :: (Bounded a) => Bounded (ArbEnum a)
+```
+
+
+#### `showArbEnum`
+
+``` purescript
+instance showArbEnum :: (Show a) => Show (ArbEnum a)
+```
+
+
+#### `enumArbEnum`
+
+``` purescript
+instance enumArbEnum :: (Enum a) => Enum (ArbEnum a)
+```
+
+
+
+## Module Test.StrongCheck.Data.Negative
+
+#### `Negative`
+
+``` purescript
+newtype Negative
+  = Negative Number
+```
+
+
+#### `arbNegative`
+
+``` purescript
+instance arbNegative :: Arbitrary Negative
+```
+
+
+#### `coarbNegative`
+
+``` purescript
+instance coarbNegative :: CoArbitrary Negative
+```
+
+
+
+## Module Test.StrongCheck.Data.NonZero
+
+#### `NonZero`
+
+``` purescript
+newtype NonZero
+  = NonZero Number
+```
+
+
+#### `arbNonZero`
+
+``` purescript
+instance arbNonZero :: Arbitrary NonZero
+```
+
+
+#### `coarbNonZero`
+
+``` purescript
+instance coarbNonZero :: CoArbitrary NonZero
+```
+
+
+
+## Module Test.StrongCheck.Data.Positive
+
+#### `Positive`
+
+``` purescript
+newtype Positive
+  = Positive Number
+```
+
+
+#### `arbPositive`
+
+``` purescript
+instance arbPositive :: Arbitrary Positive
+```
+
+
+#### `coarbPositive`
+
+``` purescript
+instance coarbPositive :: CoArbitrary Positive
+```
+
+
+
+## Module Test.StrongCheck.Data.Signum
+
+#### `Signum`
+
+``` purescript
+newtype Signum
+  = Signum Number
+```
+
+
+#### `arbSignum`
+
+``` purescript
+instance arbSignum :: Arbitrary Signum
+```
+
+
+#### `coarbSignum`
+
+``` purescript
+instance coarbSignum :: CoArbitrary Signum
 ```
 
 
