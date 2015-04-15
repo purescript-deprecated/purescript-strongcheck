@@ -40,7 +40,7 @@ function compile (compiler, src, opts) {
         .pipe(psc)
         .pipe(gulp.dest(paths.dest))
         .pipe(jsValidate());
-};
+}
 
 function docs (target) {
     return function() {
@@ -52,27 +52,27 @@ function docs (target) {
         return gulp.src(paths.docs[target].src)
             .pipe(docgen)
             .pipe(gulp.dest(paths.docs[target].dest));
-    }
+    };
 }
 
 function sequence () {
     var args = [].slice.apply(arguments);
     return function() {
         runSequence.apply(null, args);
-    }
+    };
 }
 
 gulp.task('browser', function() {
-    return compile(purescript.psc, [paths.src].concat(paths.bowerSrc), {})
+    return compile(purescript.psc, [paths.src].concat(paths.bowerSrc), {});
 });
 
 gulp.task('make', function() {
-    return compile(purescript.pscMake, [paths.src].concat(paths.bowerSrc), {})
+    return compile(purescript.pscMake, [paths.src].concat(paths.bowerSrc), {});
 });
 
 gulp.task('test', function() {
     return compile(purescript.psc, [paths.src, paths.test].concat(paths.bowerSrc), options.test)
-        .pipe(run('node').exec());
+        .pipe(run('node'));
 });
 
 gulp.task('docs', docs('StrongCheck'));

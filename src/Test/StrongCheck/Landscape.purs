@@ -21,21 +21,16 @@ module Test.StrongCheck.Landscape
   , whereAt
   ) where
 
+  import Control.Comonad.Cofree (Cofree(), mkCofree, head, tail)
+  import Control.Monad.Trampoline (runTrampoline)
+  import Data.Int (Int())
   import Data.Lazy (Lazy(), force, defer)
-  import Data.Maybe
-  import Data.Int
-  import Data.Tuple (fst, snd)
+  import Data.Maybe (Maybe(), maybe)
   import Data.Monoid (mempty)
-
-  import Control.Comonad.Cofree
-  import Control.Monad.Trampoline
+  import Data.Tuple (fst, snd)
+  import Test.StrongCheck.Gen
+  import Test.StrongCheck.Perturb
   import qualified Data.List.Lazy as L
-  import qualified Data.Machine.Mealy as Mealy
-
-  import qualified Data.Array as A
-
-  import Test.StrongCheck.Perturb (Perturb, perturb)
-  import Test.StrongCheck.Gen (GenState(..), Gen(..), toLazyList, updateSeedState, unGenOut, applyGen, infinite)
 
   type DriverStateRec a = { value :: a, variance :: Number, state :: GenState }
 

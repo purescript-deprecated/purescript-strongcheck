@@ -2,62 +2,10 @@
 
 ## Module Test.StrongCheck
 
-#### `Testable`
-
-``` purescript
-class Testable prop where
-  test :: prop -> Gen Result
-```
-
-
 #### `QC`
 
 ``` purescript
 type QC a = forall eff. Eff (err :: Exception, random :: Random, trace :: Trace | eff) a
-```
-
-
-#### `Result`
-
-``` purescript
-data Result
-  = Success 
-  | Failed String
-```
-
-
-#### `(<?>)`
-
-``` purescript
-(<?>) :: Boolean -> String -> Result
-```
-
-
-#### `(===)`
-
-``` purescript
-(===) :: forall a b. (Eq a, Show a) => a -> a -> Result
-```
-
-
-#### `(/==)`
-
-``` purescript
-(/==) :: forall a b. (Eq a, Show a) => a -> a -> Result
-```
-
-
-#### `quickCheckPure`
-
-``` purescript
-quickCheckPure :: forall prop. (Testable prop) => Int -> Seed -> prop -> [Result]
-```
-
-
-#### `quickCheck'`
-
-``` purescript
-quickCheck' :: forall prop. (Testable prop) => Int -> prop -> QC Unit
 ```
 
 
@@ -69,10 +17,25 @@ quickCheck :: forall prop. (Testable prop) => prop -> QC Unit
 
 Checks the proposition for 100 random values.
 
-#### `smallCheckPure`
+#### `assert`
 
 ``` purescript
-smallCheckPure :: forall prop. (Testable prop) => Int -> prop -> [Result]
+assert :: forall prop. (Testable prop) => prop -> QC Unit
+```
+
+Checks that the specified proposition holds. Useful for unit tests.
+
+#### `quickCheck'`
+
+``` purescript
+quickCheck' :: forall prop. (Testable prop) => Int -> prop -> QC Unit
+```
+
+
+#### `quickCheckPure`
+
+``` purescript
+quickCheckPure :: forall prop. (Testable prop) => Int -> Seed -> prop -> [Result]
 ```
 
 
@@ -85,10 +48,10 @@ smallCheck :: forall prop. (Testable prop) => prop -> QC Unit
 Exhaustively checks the proposition for all possible values. Assumes the
 generator is a finite generator.
 
-#### `statCheckPure`
+#### `smallCheckPure`
 
 ``` purescript
-statCheckPure :: forall prop. (Testable prop) => Seed -> Number -> prop -> Result
+smallCheckPure :: forall prop. (Testable prop) => Int -> prop -> [Result]
 ```
 
 
@@ -101,13 +64,57 @@ statCheck :: forall prop. (Testable prop) => Number -> prop -> QC Unit
 Checks that the proposition has a certain probability of being true for
 arbitrary values.
 
-#### `assert`
+#### `statCheckPure`
 
 ``` purescript
-assert :: forall prop. (Testable prop) => prop -> QC Unit
+statCheckPure :: forall prop. (Testable prop) => Seed -> Number -> prop -> Result
 ```
 
-Checks that the specified proposition holds. Useful for unit tests.
+
+#### `Testable`
+
+``` purescript
+class Testable prop where
+  test :: prop -> Gen Result
+```
+
+The `Testable` class represents _testable properties_.
+
+A testable property is a function of zero or more `Arbitrary` arguments,
+returning a `Boolean` or `Result`.
+
+Testable properties can be passed to the `quickCheck` function.
+
+#### `testableResult`
+
+``` purescript
+instance testableResult :: Testable Result
+```
+
+
+#### `testableBoolean`
+
+``` purescript
+instance testableBoolean :: Testable Boolean
+```
+
+
+#### `testableFunction`
+
+``` purescript
+instance testableFunction :: (Arbitrary t, Testable prop) => Testable (t -> prop)
+```
+
+
+#### `Result`
+
+``` purescript
+data Result
+  = Success 
+  | Failed String
+```
+
+The result of a test: success or failure (with an error message).
 
 #### `eqResult`
 
@@ -137,26 +144,35 @@ instance monoidResult :: Monoid Result
 ```
 
 
-#### `testableResult`
+#### `(<?>)`
 
 ``` purescript
-instance testableResult :: Testable Result
+(<?>) :: Boolean -> String -> Result
 ```
 
+This operator attaches an error message to a failed test.
 
-#### `testableBoolean`
+For example:
+
+```purescript
+test x = myProperty x <?> ("myProperty did not hold for " <> show x)
+```
+
+#### `(===)`
 
 ``` purescript
-instance testableBoolean :: Testable Boolean
+(===) :: forall a b. (Eq a, Show a) => a -> a -> Result
 ```
 
+Self-documenting equality assertion.
 
-#### `testableFunction`
+#### `(/==)`
 
 ``` purescript
-instance testableFunction :: (Arbitrary t, Testable prop) => Testable (t -> prop)
+(/==) :: forall a b. (Eq a, Show a) => a -> a -> Result
 ```
 
+Self-documenting inequality assertion.
 
 
 ## Module Test.StrongCheck.Arbitrary
@@ -374,6 +390,13 @@ data GenState
 
 ``` purescript
 unGenState :: GenState -> { size :: Size, seed :: Seed }
+```
+
+
+#### `defState`
+
+``` purescript
+defState :: Int -> GenState
 ```
 
 

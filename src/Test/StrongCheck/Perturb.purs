@@ -18,29 +18,22 @@ module Test.StrongCheck.Perturb
   , unPerturber
   ) where
 
-  import Test.StrongCheck.Gen
+  import Data.Char (Char())
+  import Data.Either (Either(..))
+  import Data.Enum (Enum, cardinality, Cardinality(..))
+  import Data.Foldable (find, sum)
+  import Data.Functor.Invariant (Invariant)
+  import Data.Int (Int(), fromNumber, toNumber)
+  import Data.Maybe (fromMaybe)
+  import Data.Monoid (mempty)
+  import Data.Traversable (sequence)
+  import Data.Tuple (Tuple(..))
+  import qualified Data.Array as A
+  import qualified Data.String as S
   import Test.StrongCheck.Arbitrary
   import Test.StrongCheck.Data.ArbEnum
   import Test.StrongCheck.Data.Signum
-  import Test.StrongCheck
-
-  import Data.Traversable
-  import Data.Foldable
-  import Data.Char
-  import Data.Tuple
-  import Data.Monoid
-  import Data.Either
-  import Data.Int
-  import Data.Maybe
-  import Data.Maybe.Unsafe
-  import Data.Functor.Invariant
-  import Data.Enum
-  import qualified Data.String as S
-  import qualified Data.Array as A
-
-  import Math
-
-  import Data.Function
+  import Test.StrongCheck.Gen
 
   newtype Attempts = Attempts Int
 
@@ -115,8 +108,8 @@ module Test.StrongCheck.Perturb
     where perturb' d (Tuple a b) =
             let dx = delta (l.dims a + r.dims b) d
                 dx2 = dx * dx
-                ld = sqrt $ dx2 * l.dims a
-                rd = sqrt $ dx2 * r.dims b
+                ld = Math.sqrt $ dx2 * l.dims a
+                rd = Math.sqrt $ dx2 * r.dims b
             in Tuple <$> l.perturb ld a <*> r.perturb rd b
 
           dist' (Tuple a1 b1) (Tuple a2 b2) = toDist [l.dist a1 a2, r.dist b1 b2]
@@ -141,17 +134,17 @@ module Test.StrongCheck.Perturb
   -- | Creates a perturber for numbers that fall within the specified range.
   bounded :: Number -> Number -> Perturber Number
   bounded a b =
-    let l = min a b
-        u = max a b
+    let l = Math.min a b
+        u = Math.max a b
 
         length = u - l
 
-        clamp n = max l (min u n)
+        clamp n = Math.max l (Math.min u n)
 
         perturb' d v = do dx <- arbitrary
                           return <<< clamp $ dx * length * d + v
 
-        dist' a b = abs (a - b)
+        dist' a b = Math.abs (a - b)
 
         dims' = const 1
 
@@ -160,17 +153,17 @@ module Test.StrongCheck.Perturb
   -- | Creates a perturber for integers that fall within the specified range.
   boundedInt :: Number -> Number -> Perturber Number
   boundedInt a b =
-    let l = floor $ min a b
-        u = ceil $ max a b
+    let l = Math.floor $ Math.min a b
+        u = Math.ceil $ Math.max a b
 
         length = u - l
 
-        clamp n = max l (min u n)
+        clamp n = Math.max l (Math.min u n)
 
         perturb' d v = do dx <- arbitrary
-                          return <<< clamp <<< round $ dx * length * d + v
+                          return <<< clamp <<< Math.round $ dx * length * d + v
 
-        dist' a b = abs (a - b)
+        dist' a b = Math.abs (a - b)
 
         dims' = const 1
 

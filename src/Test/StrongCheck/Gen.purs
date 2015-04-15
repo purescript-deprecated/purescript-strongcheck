@@ -2,6 +2,7 @@ module Test.StrongCheck.Gen
   ( GenT(..)
   , Gen(..)
   , GenState(..)
+  , defState
   , GenOut(..)
   , Size()
   , allInArray
@@ -53,36 +54,29 @@ module Test.StrongCheck.Gen
   , wrapEffect
   ) where
 
-import Control.Monad.Eff
-import Control.Monad.Eff.Random
-import Debug.Trace
-import Data.Tuple
-import Data.Lazy
-import Data.Char
-import Data.Profunctor
-import Data.Profunctor.Strong
-import Data.Monoid
-import Data.Monoid.Additive
-import Data.Maybe
-import Data.Maybe.Unsafe
-import Data.Foldable
+import Control.Alt (Alt, (<|>))
+import Control.Alternative (Alternative)
+import Control.Monad.Eff (Eff())
+import Control.Monad.Eff.Random (Random(), random)
+import Control.Monad.Trampoline (Trampoline(), runTrampoline)
+import Control.MonadPlus (MonadPlus)
+import Control.Plus (Plus)
+import Data.Char (Char(), fromCharCode)
+import Data.Foldable (fold)
 import Data.Int (Int(), fromNumber, toNumber)
-import Data.Int.Bits
-import Data.Traversable
+import Data.Lazy (Lazy(), defer)
+import Data.Maybe (Maybe(..), maybe, fromMaybe)
+import Data.Maybe.Unsafe (fromJust)
+import Data.Monoid (Monoid, mempty)
+import Data.Monoid.Additive (Additive(..), runAdditive)
+import Data.Profunctor (lmap, arr)
+import Data.Profunctor.Strong ((&&&))
+import Data.Tuple (Tuple(..), fst, snd)
+import Debug.Trace (Trace(), trace, print)
+import Test.StrongCheck.LCG
+import qualified Control.Monad.ListT as ListT
 import qualified Data.Array as A
 import qualified Data.Machine.Mealy as Mealy
-
-import Control.Monad.Free
-import Control.Monad.Trampoline
-import Control.Monad
-import qualified Control.Monad.ListT as ListT
-import Control.Bind
-import Control.Plus
-import Control.Alt
-import Control.Alternative
-import Control.MonadPlus
-import Test.StrongCheck.LCG
-
 import qualified Math as M
 
 type Size = Int
@@ -91,6 +85,9 @@ data GenState = GenState { seed :: Seed, size :: Size }
 
 unGenState :: GenState -> { seed :: Seed, size :: Size }
 unGenState (GenState s) = s
+
+defState :: Int -> GenState
+defState s = GenState { seed: s, size: fromNumber 10 }
 
 stateM :: ({ seed :: Seed, size :: Size } -> { seed :: Seed, size :: Size }) -> GenState -> GenState
 stateM f = GenState <<< f <<< unGenState

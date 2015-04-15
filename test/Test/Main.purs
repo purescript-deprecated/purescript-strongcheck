@@ -1,20 +1,19 @@
 module Test.Main where
 
-import Control.Monad.Eff
-import Debug.Trace
+import Control.Monad.Eff (Eff())
+import Control.Monad.Trampoline (runTrampoline)
+import Data.Foldable (fold, all, elem)
+import Data.Int (Int(), fromNumber)
+import Data.Maybe (Maybe(..), maybe, isJust)
+import Data.Monoid (mempty)
+import Data.Tuple (Tuple(..))
+import Debug.Trace (trace)
+import qualified Data.Array as Array
 import Test.StrongCheck
 import Test.StrongCheck.Arbitrary
 import Test.StrongCheck.Gen
-import Test.StrongCheck.Perturb
 import Test.StrongCheck.Landscape
-import Control.Monad.Trampoline
-import Data.Int
-import Data.Monoid
-import Data.Tuple
-import Data.Maybe
-import Data.Foldable
-import qualified Data.Array as Array
-import qualified Math as Math
+import Test.StrongCheck.Perturb
 
 between :: forall a. (Ord a) => a -> a -> a -> Boolean
 between min max = \n -> n >= min && n <= max

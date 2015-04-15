@@ -3,10 +3,10 @@ module Test.StrongCheck.Arbitrary where
 import Data.Array (map)
 import Data.Char (Char(), toCharCode, fromCharCode)
 import Data.Either (Either(..))
+import Data.Int (Int(), fromNumber, toNumber)
 import Data.Maybe (Maybe(..))
 import Data.String (charCodeAt, fromCharArray, split)
 import Data.Tuple (Tuple(..))
-import Data.Int (Int(), fromNumber, toNumber)
 import Test.StrongCheck.Gen
 
 -- | The `Arbitrary` class represents those types whose values can be
