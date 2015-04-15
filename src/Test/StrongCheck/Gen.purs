@@ -2,9 +2,9 @@ module Test.StrongCheck.Gen
   ( GenT(..)
   , Gen(..)
   , GenState(..)
+  , defState
   , GenOut(..)
   , Size()
-  , Seed()
   , allInArray
   , allInRange
   , applyGen
@@ -54,43 +54,40 @@ module Test.StrongCheck.Gen
   , wrapEffect
   ) where
 
-import Control.Monad.Eff
-import Control.Monad.Eff.Random
-import Debug.Trace
-import Data.Tuple
-import Data.Lazy
-import Data.Char
-import Data.Profunctor
-import Data.Profunctor.Strong
-import Data.Monoid
-import Data.Monoid.Additive
-import Data.Maybe
-import Data.Maybe.Unsafe
-import Data.Foldable
-import Data.Traversable
+import Control.Alt (Alt, (<|>))
+import Control.Alternative (Alternative)
+import Control.Monad.Eff (Eff())
+import Control.Monad.Eff.Random (Random(), random)
+import Control.Monad.Trampoline (Trampoline(), runTrampoline)
+import Control.MonadPlus (MonadPlus)
+import Control.Plus (Plus)
+import Data.Char (Char(), fromCharCode)
+import Data.Foldable (fold)
+import Data.Int (Int(), fromNumber, toNumber)
+import Data.Lazy (Lazy(), defer)
+import Data.Maybe (Maybe(..), maybe, fromMaybe)
+import Data.Maybe.Unsafe (fromJust)
+import Data.Monoid (Monoid, mempty)
+import Data.Monoid.Additive (Additive(..), runAdditive)
+import Data.Profunctor (lmap, arr)
+import Data.Profunctor.Strong ((&&&))
+import Data.Tuple (Tuple(..), fst, snd)
+import Debug.Trace (Trace(), trace, print)
+import Test.StrongCheck.LCG
+import qualified Control.Monad.ListT as ListT
 import qualified Data.Array as A
 import qualified Data.Machine.Mealy as Mealy
-
-import Control.Monad.Free
-import Control.Monad.Trampoline
-import Control.Monad
-import qualified Control.Monad.ListT as ListT
-import Control.Bind
-import Control.Plus
-import Control.Alt
-import Control.Alternative
-import Control.MonadPlus
-
 import qualified Math as M
 
-
-type Size = Number
-type Seed  = Number
+type Size = Int
 
 data GenState = GenState { seed :: Seed, size :: Size }
 
 unGenState :: GenState -> { seed :: Seed, size :: Size }
 unGenState (GenState s) = s
+
+defState :: Int -> GenState
+defState s = GenState { seed: s, size: fromNumber 10 }
 
 stateM :: ({ seed :: Seed, size :: Size } -> { seed :: Seed, size :: Size }) -> GenState -> GenState
 stateM f = GenState <<< f <<< unGenState
@@ -107,23 +104,13 @@ type Gen a = GenT Trampoline a
 unGen :: forall f a. GenT f a -> Mealy.MealyT f GenState (GenOut a)
 unGen (GenT m) = m
 
-lcgM :: Seed
-lcgM = 1103515245
 
-lcgC :: Seed
-lcgC = 12345
-
-lcgN :: Seed
-lcgN = 1 `shl` 30
-
-lcgNext :: Seed -> Seed
-lcgNext n = (lcgM * n + lcgC) % lcgN
 
 lcgStep :: forall f. (Monad f) => GenT f Seed
 lcgStep = GenT $ arr $ \s -> GenOut { state: updateSeedState s, value: (unGenState s).seed }
 
-uniform :: forall f. (Monad f) => GenT f Seed
-uniform = (\n -> n / (1 `shl` 30)) <$> lcgStep
+uniform :: forall f. (Monad f) => GenT f Number
+uniform = (\n -> toNumber n / toNumber lcgN) <$> lcgStep
 
 stepGen :: forall f a. (Monad f) => GenState -> GenT f a -> f (Maybe (GenOut (Tuple a (GenT f a))))
 stepGen st (GenT m) =   h <$> Mealy.stepMealy st m
@@ -168,7 +155,7 @@ resize sz g = GenT $ lmap (stateM (\s -> s { size = sz })) (unGen g)
 
 -- | A generator for characters.
 charGen :: forall f. (Monad f) => GenT f Char
-charGen = fromCharCode <$> chooseInt 0 65535
+charGen = fromCharCode <$> chooseInt zero (fromNumber 65535)
 
 -- | Creates a generator that generates real numbers between the specified
 -- | inclusive range.
@@ -179,44 +166,42 @@ choose a b = (*) (max - min) >>> (+) min <$> uniform
 
 -- | Creates a generator that generates integers between the specified
 -- | inclusive range.
-chooseInt :: forall f. (Monad f) => Number -> Number -> GenT f Number
-chooseInt a b = let min = M.ceil  (M.min a b)
-                    max = M.floor (M.max a b)
-                in  (M.round <<< (+) (min - 0.5) <<< (*) (max - min + 1)) <$> uniform
+chooseInt :: forall f. (Monad f) => Int -> Int -> GenT f Int
+chooseInt a b = fromNumber <$> choose (toNumber a) (toNumber b + 0.999999999)
 
 -- | Creates a generator that chooses another generator from the specified list
 -- | at random, and then generates a value with that generator.
 oneOf :: forall f a. (Monad f) => GenT f a -> [GenT f a] -> GenT f a
-oneOf x xs = do n <- chooseInt 0 (A.length xs)
-                if n == 0 then x else fromMaybe x (xs A.!! (n - 1))
+oneOf x xs = do n <- chooseInt zero (A.length xs)
+                if n == zero then x else fromMaybe x (xs A.!! (n - one))
 
 -- | Generates elements by the specified frequencies (which will be normalized).
-frequency :: forall f a. (Monad f) => Tuple Number (GenT f a) -> [Tuple Number (GenT f a)] -> GenT f a
+frequency :: forall f a. (Monad f) => Tuple Int (GenT f a) -> [Tuple Int (GenT f a)] -> GenT f a
 frequency x xs =
   let xxs   = x : xs
-      total = runAdditive $ fold (((Additive <<< fst) <$> xxs) :: [Additive Number])
+      total = runAdditive $ fold (((Additive <<< fst) <$> xxs) :: [Additive Int])
       pick n d [] = d
       pick n d ((Tuple k x) : xs) = if n <= k then x else pick (n - k) d xs
 
-  in do n <- chooseInt 1 total
+  in do n <- chooseInt one total
         pick n (snd x) xxs
 
 -- | Creates a generator of elements ranging from 0 to the maximum size.
 arrayOf :: forall f a. (Monad f) => GenT f a -> GenT f [a]
 arrayOf g = sized $ \n ->
-  do k <- chooseInt 0 n
+  do k <- chooseInt zero n
      vectorOf k g
 
 -- | Creates a generator of elements ranging from 1 to the maximum size.
 arrayOf1 :: forall f a. (Monad f) => GenT f a -> GenT f (Tuple a [a])
 arrayOf1 g = sized $ \n ->
-  do k  <- chooseInt 0 n
+  do k  <- chooseInt zero n
      x  <- g
-     xs <- vectorOf (k - 1) g
+     xs <- vectorOf (k - one) g
      return $ Tuple x xs
 
 -- | Creates a generator that generates arrays of some specified size.
-vectorOf :: forall f a. (Monad f) => Number -> GenT f a -> GenT f [a]
+vectorOf :: forall f a. (Monad f) => Int -> GenT f a -> GenT f [a]
 vectorOf n g = transGen f [] (extend n g)
   where f b a = let b' = b <> [a]
                 in  if A.length b' >= n then Tuple [] (Just b') else Tuple b' Nothing
@@ -224,8 +209,8 @@ vectorOf n g = transGen f [] (extend n g)
 -- | Creates a generator that chooses an element from among a set of elements.
 elements :: forall f a. (Monad f) => a -> [a] -> GenT f a
 elements x xs = do
-  n <- chooseInt 0 (A.length xs)
-  pure if n == 0 then x else fromMaybe x (xs A.!! (n - 1))
+  n <- chooseInt zero (A.length xs)
+  pure if n == zero then x else fromMaybe x (xs A.!! (n - one))
 
 foreign import float32ToInt32
   "function float32ToInt32(n) {\
@@ -234,13 +219,16 @@ foreign import float32ToInt32
   \  var iv = new Int32Array(arr);\
   \  fv[0] = n;\
   \  return iv[0];\
-  \}" :: Number -> Number
+  \}" :: Number -> Int
 
 perturbGen :: forall f a. (Monad f) => Number -> GenT f a -> GenT f a
 perturbGen n (GenT m) = GenT $ lmap (stateM (\s -> s { seed = perturbNum n s.seed })) m
 
 perturbNum :: Number -> Seed -> Seed
 perturbNum n = (+) $ lcgNext (float32ToInt32 n)
+
+perturbInt :: Int -> Seed -> Seed
+perturbInt n = (+) $ lcgNext n
 
 updateSeedState :: GenState -> GenState
 updateSeedState (GenState s) = GenState { seed: lcgNext s.seed, size: s.size }
@@ -263,12 +251,12 @@ dropGen n = liftMealy $ Mealy.drop n
 
 -- | Extends a generator to produce *at least* the specified number of values.
 -- | Will not turn a finite generator into an infinite one.
-extend :: forall f a. (Monad f) => Number -> GenT f a -> GenT f a
-extend n (GenT m) = (GenT $ loop 0 m) <> (GenT m)
+extend :: forall f a. (Monad f) => Int -> GenT f a -> GenT f a
+extend n (GenT m) = (GenT $ loop zero m) <> (GenT m)
   where m0 = m
         loop i m = Mealy.mealy \st ->
           let f Mealy.Halt       = if i >= n then pure Mealy.Halt else Mealy.stepMealy st (loop i m0)
-              f (Mealy.Emit s m) = pure $ Mealy.Emit s (loop (i + 1) m)
+              f (Mealy.Emit s m) = pure $ Mealy.Emit s (loop (i + one) m)
 
           in  Mealy.stepMealy st m >>= f
 
@@ -320,14 +308,16 @@ perms (x : xs)  =
       let f n = let prefix = A.take n xs
                     suffix = A.drop n xs
                 in  prefix <> [x] <> suffix
-      allInArray $ f <$> A.range 0 (A.length xs)
+      allInArray $ f <$> A.range zero (A.length xs)
 
 -- | A deterministic generator that produces all possible combinations of
 -- | choosing exactly k elements from the specified array.
-nChooseK :: forall f a. (Monad f) => Number -> [a] -> GenT f [a]
-nChooseK 0 _      = pure []
-nChooseK _ []     = mempty
-nChooseK k (x:xs) = ((:) x <$> (nChooseK (k - 1) xs)) <> nChooseK k xs
+nChooseK :: forall f a. (Monad f) => Int -> [a] -> GenT f [a]
+nChooseK k gens | k == zero = pure []
+                | otherwise = nChooseK' gens
+  where
+  nChooseK' [] = mempty
+  nChooseK' (x:xs) = ((:) x <$> (nChooseK (k - one) xs)) <> nChooseK k xs
 
 -- | Filters a generator to produce only values satisfying the specified
 -- | predicate.
@@ -352,9 +342,9 @@ allInRange min max = GenT $ go min where
 -- | A deterministic generator that produces values from the specified array,
 -- | in sequence.
 allInArray :: forall f a. (Monad f) => [a] -> GenT f a
-allInArray a = GenT $ go 0 where
+allInArray a = GenT $ go zero where
   go i = Mealy.pureMealy $ \s ->
-    maybe Mealy.Halt (\a -> Mealy.Emit (GenOut { state: s, value: a }) (go (i + 1))) (a A.!! i)
+    maybe Mealy.Halt (\a -> Mealy.Emit (GenOut { state: s, value: a }) (go (i + one))) (a A.!! i)
 
 -- | Drains a finite generator of all values. Or blows up if you called it on
 -- | an infinite generator.
@@ -370,33 +360,33 @@ applyGen s (GenT m) = f <$> Mealy.stepMealy s m where
   f (Mealy.Emit (GenOut { state = s, value = a }) m) = Just $ GenOut { state: s, value: Tuple a (GenT m)}
 
 -- | Samples a generator, producing the specified number of values.
-sample' :: forall f a. (Monad f) => Number -> GenState -> GenT f a -> f [a]
+sample' :: forall f a. (Monad f) => Int -> GenState -> GenT f a -> f [a]
 sample' n st g = fst <$> runGen n st g
 
 -- | Samples a generator, producing the specified number of values. Uses
 -- | default settings for the initial generator state.
-sample :: forall f a. (Monad f) => Number -> GenT f a -> f [a]
-sample n = sample' n (GenState { size: 10, seed: 4545645874 })
+sample :: forall f a. (Monad f) => Int -> GenT f a -> f [a]
+sample n = sample' n (GenState { size: fromNumber 10, seed: fromNumber 4545645874 })
 
 -- | Shows a sample of values generated from the specified generator.
-showSample' :: forall r a. (Show a) => Number -> Gen a -> Eff (trace :: Trace | r) Unit
+showSample' :: forall r a. (Show a) => Int -> Gen a -> Eff (trace :: Trace | r) Unit
 showSample' n g = print $ runTrampoline $ sample n g
 
 -- | Shows a sample of values generated from the specified generator.
 showSample :: forall r a. (Show a) => Gen a -> Eff (trace :: Trace | r) Unit
-showSample = showSample' 10
+showSample = showSample' (fromNumber 10)
 
 -- | Runs a generator to produce a specified number of values, returning both
 -- | an array containing the values and the successor Gen that can be used to
 -- | continue the generation process at a later time.
-runGen :: forall f a. (Monad f) => Number -> GenState -> GenT f a -> f (Tuple [a] (GenT f a))
+runGen :: forall f a. (Monad f) => Int -> GenState -> GenT f a -> f (Tuple [a] (GenT f a))
 runGen n st g = foldGen' f [] st (extend n g)
   where f v a = ifThenElse (A.length v < n) (Just $ v <> [a]) Nothing
 
 -- | Creates a generator that produces chunks of values in the specified size.
 -- | Will extend the generator if necessary to produce a chunk of the specified
 -- | size, but will not turn a finite generator into an infinite generator.
-chunked :: forall f a. (Monad f) => Number -> GenT f a -> GenT f [a]
+chunked :: forall f a. (Monad f) => Int -> GenT f a -> GenT f [a]
 chunked n g = transGen f [] (extend n g) where
   f xs a = let xs' = a : xs
            in  if A.length xs' >= n then Tuple [] (Just xs') else Tuple xs' Nothing
@@ -409,7 +399,7 @@ wrapEffect fa = GenT $ g <$> (id &&& (Mealy.wrapEffect fa)) where
 -- | Creates a generator that mixes up the order of the specified generator.
 -- | This is achieved by chunking the generator with the specified size
 -- | and then shuffling each chunk before continuing to the next.
-shuffle' :: forall f a. (Monad f) => Number -> GenT f a -> GenT f a
+shuffle' :: forall f a. (Monad f) => Int -> GenT f a -> GenT f a
 shuffle' n g =
   do  chunks   <- chunked n g
       shuffled <- shuffleArray chunks
@@ -417,15 +407,15 @@ shuffle' n g =
 
 -- | Same as shuffle' but with default for the chunk size.
 shuffle :: forall f a. (Monad f) => GenT f a -> GenT f a
-shuffle = shuffle' 100
+shuffle = shuffle' (fromNumber 100)
 
 -- | Creates a generator that produces shuffled versions of the provided array.
 shuffleArray :: forall f a. (Monad f) => [a] -> GenT f [a]
 shuffleArray = shuffle0 [] where
   shuffle0 acc []  = pure $ acc
-  shuffle0 acc xs  = do i <- chooseInt 0 (A.length xs - 1)
-                        let acc' = acc <> (maybe [] (flip (:) []) (xs A.!! i))
-                        shuffle0 acc' (A.deleteAt i 1 xs)
+  shuffle0 acc xs  = do i <- chooseInt zero (A.length xs - one)
+                        let acc' = acc <> (maybe [] (flip (:) []) (xs A.!! one))
+                        shuffle0 acc' (A.deleteAt i one xs)
 
 -- | Converts the generator into a function that, given the initial state,
 -- | returns a lazy list.
@@ -436,10 +426,10 @@ toLazyList (GenT m) s = ListT.wrapLazy $ defer \_ -> loop m s where
                 Mealy.Emit (GenOut { value = a, state = s }) m  -> ListT.prepend' a (defer \_ -> loop m s)
 
 instance semigroupGenState :: Semigroup GenState where
-  (<>) (GenState a) (GenState b) = GenState { seed: perturbNum a.seed b.seed, size: b.size }
+  (<>) (GenState a) (GenState b) = GenState { seed: perturbInt a.seed b.seed, size: b.size }
 
 instance monoidGenState :: Monoid GenState where
-  mempty = GenState { seed: 0, size: 10 }
+  mempty = GenState { seed: zero, size: fromNumber 10 }
 
 instance semigroupGenOut :: (Semigroup a) => Semigroup (GenOut a) where
   (<>) (GenOut a) (GenOut b) = GenOut { state: a.state <> b.state, value: a.value <> b.value }

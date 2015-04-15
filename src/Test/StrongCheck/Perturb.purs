@@ -16,46 +16,44 @@ module Test.StrongCheck.Perturb
   , searchIn'
   , searchIn
   , unPerturber
-  , xmap
   ) where
 
-  import Test.StrongCheck.Gen
-  import Test.StrongCheck
-
-  import Data.Traversable
-  import Data.Foldable
-  import Data.Char
-  import Data.Tuple
-  import Data.Monoid
-  import Data.Either
-  import Data.Maybe
-  import Data.Maybe.Unsafe
-  import Data.Enum
-  import qualified Data.String as S
+  import Data.Char (Char())
+  import Data.Either (Either(..))
+  import Data.Enum (Enum, cardinality, Cardinality(..))
+  import Data.Foldable (find, sum)
+  import Data.Functor.Invariant (Invariant)
+  import Data.Int (Int(), fromNumber, toNumber)
+  import Data.Maybe (fromMaybe)
+  import Data.Monoid (mempty)
+  import Data.Traversable (sequence)
+  import Data.Tuple (Tuple(..))
   import qualified Data.Array as A
+  import qualified Data.String as S
+  import Test.StrongCheck.Arbitrary
+  import Test.StrongCheck.Data.ArbEnum
+  import Test.StrongCheck.Data.Signum
+  import Test.StrongCheck.Gen
 
-  import Math
-
-  import Data.Function
-
-  newtype Attempts = Attempts Number
+  newtype Attempts = Attempts Int
 
   newtype Perturber a = Perturber (PerturberRec a)
 
-  type PerturberRec a = {
-    perturb :: Number -> a -> Gen a,
-    dist    :: a -> a -> Number,
-    dims    :: a -> Number }
+  type PerturberRec a =
+    { perturb :: Number -> a -> Gen a
+    , dist    :: a -> a -> Number
+    , dims    :: a -> Number
+    }
 
   unPerturber :: forall a. Perturber a -> PerturberRec a
   unPerturber (Perturber v) = v
 
-  -- TODO: Move to Data.Functor.Invariant
-  xmap :: forall a b. (a -> b) -> (b -> a) -> Perturber a -> Perturber b
-  xmap f g (Perturber p) = Perturber {
-    perturb : \n b -> f <$> p.perturb n (g b),
-    dist    : \b1 b2 -> p.dist (g b1) (g b2),
-    dims    : \b -> p.dims (g b) }
+  instance invariantPerturber :: Invariant Perturber where
+    imap f g (Perturber p) = Perturber
+      { perturb : \n b -> f <$> p.perturb n (g b)
+      , dist    : \b1 b2 -> p.dist (g b1) (g b2)
+      , dims    : \b -> p.dims (g b)
+      }
 
   -- | The class for things which can be perturbed.
   -- |
@@ -76,10 +74,11 @@ module Test.StrongCheck.Perturb
 
   -- | Creates a perturber that perturbs nothing.
   nonPerturber :: forall a. Perturber a
-  nonPerturber = Perturber {
-    perturb : const pure,
-    dist    : const $ const 0,
-    dims    : const 0 }
+  nonPerturber = Perturber
+    { perturb : const pure
+    , dist    : const $ const 0
+    , dims    : const 0
+    }
 
   -- | Given one example, searches for other examples that satisfy a provided
   -- | boolean predicate.
@@ -88,17 +87,18 @@ module Test.StrongCheck.Perturb
   -- | as far removed from the provided example as possible. The sampling size
   -- | parameter determines how many samples to take at every level of
   -- | searching, while the attempts parameter determines how many levels.
-  searchIn' :: forall a. (Perturb a) => Attempts -> Number -> (a -> Boolean) -> a -> Gen a
-  searchIn' (Attempts k) n f a = search0 k 1
-    where search0 k d = ifThenElse (k <= 0) mempty
-                        (do a' <- find f <$> (takeGen 1 $ chunked n (perturb d a))
-                            fromMaybe mempty (pure <$> a') <> search0 (k - 1) (d / 2))
+  searchIn' :: forall a. (Perturb a) => Attempts -> Int -> (a -> Boolean) -> a -> Gen a
+  searchIn' (Attempts k) n f a = search0 k one
+    where
+    search0 k d | k <= zero = mempty
+                | otherwise = do a' <- find f <$> (takeGen one $ chunked n (perturb d a))
+                                 fromMaybe mempty (pure <$> a') <> search0 (k - one) (d / 2)
 
 
   -- | The same as search', but uses defaults for attempt count and sample size.
   -- | Will search a total of 10,000 examples before giving up.
   searchIn :: forall a. (Perturb a) => (a -> Boolean) -> a -> Gen a
-  searchIn = searchIn' (Attempts 1000) 10
+  searchIn = searchIn' (Attempts $ fromNumber 1000) (fromNumber 10)
 
   infixr 6 </\>
 
@@ -108,8 +108,8 @@ module Test.StrongCheck.Perturb
     where perturb' d (Tuple a b) =
             let dx = delta (l.dims a + r.dims b) d
                 dx2 = dx * dx
-                ld = sqrt $ dx2 * l.dims a
-                rd = sqrt $ dx2 * r.dims b
+                ld = Math.sqrt $ dx2 * l.dims a
+                rd = Math.sqrt $ dx2 * r.dims b
             in Tuple <$> l.perturb ld a <*> r.perturb rd b
 
           dist' (Tuple a1 b1) (Tuple a2 b2) = toDist [l.dist a1 a2, r.dist b1 b2]
@@ -134,17 +134,17 @@ module Test.StrongCheck.Perturb
   -- | Creates a perturber for numbers that fall within the specified range.
   bounded :: Number -> Number -> Perturber Number
   bounded a b =
-    let l = min a b
-        u = max a b
+    let l = Math.min a b
+        u = Math.max a b
 
         length = u - l
 
-        clamp n = max l (min u n)
+        clamp n = Math.max l (Math.min u n)
 
         perturb' d v = do dx <- arbitrary
                           return <<< clamp $ dx * length * d + v
 
-        dist' a b = abs (a - b)
+        dist' a b = Math.abs (a - b)
 
         dims' = const 1
 
@@ -153,17 +153,17 @@ module Test.StrongCheck.Perturb
   -- | Creates a perturber for integers that fall within the specified range.
   boundedInt :: Number -> Number -> Perturber Number
   boundedInt a b =
-    let l = floor $ min a b
-        u = ceil $ max a b
+    let l = Math.floor $ Math.min a b
+        u = Math.ceil $ Math.max a b
 
         length = u - l
 
-        clamp n = max l (min u n)
+        clamp n = Math.max l (Math.min u n)
 
         perturb' d v = do dx <- arbitrary
-                          return <<< clamp <<< round $ dx * length * d + v
+                          return <<< clamp <<< Math.round $ dx * length * d + v
 
-        dist' a b = abs (a - b)
+        dist' a b = Math.abs (a - b)
 
         dims' = const 1
 
@@ -171,9 +171,8 @@ module Test.StrongCheck.Perturb
 
   enumerated :: forall a. (Eq a) => a -> [a] -> Perturber a
   enumerated x xs = Perturber { perturb : perturb', dist : dist', dims : dims' }
-    where len = 1 + A.length xs
+    where len = toNumber $ one + A.length xs
           cutoff = 1 / (2 * len)
-
           perturb' n a = if n < cutoff then pure a else elements x xs
           dist' a1 a2 = if a2 == a2 then 0 else cutoff
           dims' a = if len > 0 then 1 else 0
@@ -183,10 +182,10 @@ module Test.StrongCheck.Perturb
       where perturb' n e = cardPerturb1 (cardPerturb1F e n)
 
             dist' a b = cardDist1 f a b where
-              f (Cardinality sz) a b = if runArbEnum a == runArbEnum b then 0 else 1 / (2 * sz)
+              f (Cardinality sz) a b = if runArbEnum a == runArbEnum b then 0 else 1 / (2 * (toNumber sz))
 
             dims' e = enumDims f e where
-              f (Cardinality sz) e = if sz <= 0 then 0 else 1
+              f (Cardinality sz) e = if sz <= zero then 0 else 1
 
   instance perturbNumber :: Perturb Number where
     perturber = Perturber { perturb : perturb', dist : dist', dims : dims' }
@@ -206,12 +205,12 @@ module Test.StrongCheck.Perturb
     perturber = Perturber { perturb : perturb', dist : dist', dims : dims' }
       where perturb' d []  = pure $ []
             perturb' 0 a   = sequence $ perturb 0 <$> a
-            perturb' d a   = let dx = delta (A.length a) d
+            perturb' d a   = let dx = delta (toNumber $ A.length a) d
                              in  sequence $ perturb dx <$> a
 
             dist' a b = toDist $ A.zipWith dist a b
 
-            dims' = A.length
+            dims' = toNumber <<< A.length
 
   instance perturbChar :: Perturb Char where
     perturber = Perturber { perturb : perturb', dist : dist', dims : dims' }
@@ -236,10 +235,6 @@ module Test.StrongCheck.Perturb
             dist' s1 s2 = dist (S.toCharArray s1) (S.toCharArray s2)
 
             dims' = dims <<< S.toCharArray
-
-  -- magical constants
-  maxNumber :: Number
-  maxNumber = 9007199254740992
 
   -- math
   k0 :: Number
@@ -273,4 +268,4 @@ module Test.StrongCheck.Perturb
   -- Attempted to unify a constrained type (Test.StrongCheck.Arbitrary u15286) =>
   -- Test.StrongCheck.Gen.Gen<u15286> with another type.
   cardPerturb1F :: forall a. (Enum a) => a -> Number -> Cardinality a -> Gen a
-  cardPerturb1F a n (Cardinality sz) = if n < 1 / (2 * sz) then pure a else (runArbEnum <$> arbitrary)
+  cardPerturb1F a n (Cardinality sz) = if n < 1 / (2 * (toNumber sz)) then pure a else (runArbEnum <$> arbitrary)
