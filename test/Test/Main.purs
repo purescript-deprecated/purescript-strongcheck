@@ -1,17 +1,19 @@
 module Test.Main where
 
-import Control.Monad.Eff
-import Data.Eq
-import Debug.Trace
+import Prelude 
+import Control.Monad.Eff (Eff())
+import Control.Monad.Eff.Console (log)
 import Test.StrongCheck
 import Test.StrongCheck.Gen
 import Test.StrongCheck.Perturb
 import Test.StrongCheck.Landscape
-import Control.Monad.Trampoline
-import Data.Monoid
-import Data.Tuple
-import Data.Maybe
-import Data.Foldable
+import Control.Monad.Trampoline (runTrampoline)
+import Data.Monoid (mempty)
+import Data.Tuple (Tuple(..))
+import Data.Maybe (Maybe(..), maybe, isJust)
+import Data.Foldable (fold, all, elem)
+import Data.Int (fromNumber, toNumber)
+import Data.List (toList)
 import qualified Data.Array as Array
 import qualified Math as Math
 
@@ -19,21 +21,21 @@ between :: forall a. (Ord a) => a -> a -> a -> Boolean
 between min max = \n -> n >= min && n <= max
 
 data Mega  = Mega { 
-  arrayOf     :: [Number],
-  arrayOf1    :: [Number],
+  arrayOf     :: Array Number,
+  arrayOf1    :: Array Number,
   choose      :: Number,
-  chooseInt   :: Number,
-  collectAll  :: [Number],
-  allInArray  :: [Number],
-  allInRange  :: [Number],
-  dropGen     :: [Number],
-  takeGen     :: [Number],
-  elements    :: [String],
-  extend      :: [String],
-  infinite    :: [String],
-  perms       :: [[String]],
-  combos      :: [[String]],
-  chunked     :: [[String]] }
+  chooseInt   :: Int,
+  collectAll  :: Array Number,
+  allInArray  :: Array Number,
+  allInRange  :: Array Int,
+  dropGen     :: Array Number,
+  takeGen     :: Array Number,
+  elements    :: Array String,
+  extend      :: Array String,
+  infinite    :: Array String,
+  perms       :: Array (Array String),
+  combos      :: Array (Array String),
+  chunked     :: Array (Array String) }
 
 {- TODO: Remaining cases
   , frequency 
@@ -63,26 +65,26 @@ runDetABC (DetABC s) = s
 instance arbDetABC :: Arbitrary DetABC where
   arbitrary = DetABC <$> allInArray ["A", "B", "C"]
 
-data OneToTen = OneToTen Number
+data OneToTen = OneToTen Int
 
 runOneToTen :: OneToTen -> Number
-runOneToTen (OneToTen n) = n
+runOneToTen (OneToTen n) = toNumber n
 
 instance arbOneToTen :: Arbitrary OneToTen where
-  arbitrary = OneToTen <$> chooseInt 0 10
+  arbitrary = OneToTen <$> chooseInt 0.0 10.0
 
 instance arbMega :: Arbitrary Mega where
   arbitrary = do 
-    arrayOf'    <- arrayOf (choose 0 10)
-    arrayOf1'   <- arrayOf1 (choose 0 10)
-    choose'     <- choose 0 10
-    chooseInt'  <- chooseInt 0 10
-    collectAll' <- collectAll mempty (allInArray [0, 1, 2])
-    allInArray' <- collectAll mempty (allInArray [0, 1, 2])
+    arrayOf'    <- arrayOf (choose 0.0 10.0)
+    arrayOf1'   <- arrayOf1 (choose 0.0 10.0)
+    choose'     <- choose 0.0 10.0
+    chooseInt'  <- chooseInt 0.0 10.0
+    collectAll' <- collectAll mempty (allInArray [0.0, 1.0, 2.0])
+    allInArray' <- collectAll mempty (allInArray [0.0, 1.0, 2.0])
     allInRange' <- collectAll mempty (allInRange 0 10)
-    dropGen'    <- collectAll mempty $ dropGen 2 (allInArray [2, 1, -1])
-    takeGen'    <- collectAll mempty $ takeGen 2 (allInArray [2, 1, -1])
-    elements'   <- arrayOf $ elements "foo" ["bar", "baz"]
+    dropGen'    <- collectAll mempty $ dropGen 2 (allInArray [2.0, 1.0, -1.0])
+    takeGen'    <- collectAll mempty $ takeGen 2 (allInArray [2.0, 1.0, -1.0])
+    elements'   <- arrayOf $ elements "foo" $ toList ["bar", "baz"]
     extend'     <- collectAll mempty $ extend 3 (pure "5")
     infinite'   <- collectAll mempty $ takeGen 4 (infinite $ pure "foo")
     perms'      <- collectAll mempty $ perms ["John", "D"]
@@ -90,7 +92,7 @@ instance arbMega :: Arbitrary Mega where
     chunked'    <- collectAll mempty $ chunked 3 (pure "foo")
     return $ Mega { 
       arrayOf:    arrayOf', 
-      arrayOf1:   (case arrayOf1' of Tuple a as -> a : as), 
+      arrayOf1:   (case arrayOf1' of Tuple a as -> [a] <> as), 
       choose:     choose',  
       chooseInt:  chooseInt', 
       collectAll: collectAll', 
@@ -107,54 +109,56 @@ instance arbMega :: Arbitrary Mega where
 
 verify_gen :: Mega -> Result
 verify_gen (Mega m) = fold [
-  all (between 0 10) m.arrayOf                        <?> "arrayOf: "     ++ show m.arrayOf,
+  all (between 0.0 10.0) m.arrayOf                        <?> "arrayOf: "     ++ show m.arrayOf,
   Array.length m.arrayOf1 >= 1                        <?> "arrayOf1: "    ++ show m.arrayOf1,
-  between 0 10 m.choose                               <?> "choose: "      ++ show m.choose,
-  between 0 10 m.chooseInt && 
-  Math.floor(m.chooseInt) == m.chooseInt              <?> "chooseInt: "   ++ show m.chooseInt,
-  m.collectAll == [0, 1, 2]                           <?> "collectAll: "  ++ show m.collectAll,
-  m.allInArray == [0, 1, 2]                           <?> "allInArray: "  ++ show m.allInArray,
+  between 0.0 10.0 m.choose                               <?> "choose: "      ++ show m.choose,
+  between 0.0 10.0 (toNumber m.chooseInt) && 
+  Math.floor(toNumber m.chooseInt) == toNumber m.chooseInt              <?> "chooseInt: "   ++ show m.chooseInt,
+  m.collectAll == [0.0, 1.0, 2.0]                           <?> "collectAll: "  ++ show m.collectAll,
+  m.allInArray == [0.0, 1.0, 2.0]                           <?> "allInArray: "  ++ show m.allInArray,
   m.allInRange == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]  <?> "allInRange: "  ++ show m.allInRange,
-  m.dropGen == [-1]                                   <?> "dropGen: "     ++ show m.dropGen,
-  m.takeGen == [2, 1]                                 <?> "takeGen: "     ++ show m.takeGen,
+  m.dropGen == [-1.0]                                   <?> "dropGen: "     ++ show m.dropGen,
+  m.takeGen == [2.0, 1.0]                                 <?> "takeGen: "     ++ show m.takeGen,
   all (flip elem ["foo", "bar", "baz"]) m.elements    <?> "elements: "    ++ show m.elements,
   Array.take 3 m.extend == ["5", "5", "5"]            <?> "extend: "      ++ show m.extend,
   m.infinite == ["foo", "foo", "foo", "foo"]          <?> "infinite: "    ++ show m.infinite,
-  m.perms == ["John", "D"] : ["D", "John"] : []       <?> "perms: "       ++ show m.perms,
-  m.combos == ["foo", "bar"] : ["foo", "baz"] : 
-              ["bar", "baz"] : []                     <?> "combos: "      ++ show m.combos,
-  m.chunked == ["foo", "foo", "foo"] : []             <?> "chunked: "     ++ show m.chunked]
+  m.perms == [ ["John", "D"]
+             , ["D", "John"]]                         <?> "perms: "       ++ show m.perms,
+  m.combos == [ ["foo", "bar"]
+              , ["foo", "baz"]
+              , ["bar", "baz"]]                       <?> "combos: "      ++ show m.combos,
+  m.chunked == [["foo", "foo", "foo"]]                <?> "chunked: "     ++ show m.chunked]
 
 main = do
-  trace "Gen combinators"
+  log "Gen combinators"
   quickCheck $ verify_gen
 
-  trace "foldGen"
+  log "foldGen"
   quickCheck $ (runTrampoline $ foldGen (\a b -> Just $ a + b) 1 mempty (allInArray [1, 2, 3])) == 7
 
-  trace "smallCheck"
+  log "smallCheck"
   smallCheck $ runDetABC >>> (flip elem ["A", "B", "C"])
 
-  trace "Fair distribution of booleans"
-  statCheck (1/2) $ (==) true
+  log "Fair distribution of booleans"
+  statCheck (1.0/2.0) $ (==) true
   
-  trace "Fair distribution of ints"
-  statCheck (1/11) $ runOneToTen >>> ((==) 1)
+  log "Fair distribution of ints"
+  statCheck (1.0/11.0) $ runOneToTen >>> ((==) 1.0)
 
-  trace "search can find another example"
-  let found n = Math.abs (n - 36) <= 2
+  log "search can find another example"
+  let found n = Math.abs (n - 36.0) <= 2.0
   let v = runTrampoline $ sample 1 $ searchIn found 35.24
-  trace $ show v
+  log $ show v
   assert $ maybe false found (v Array.!! 0)
 
-  trace "creating infinite bool landscape doesn't blow the stack"
-  assert $ isJust $ (somewhere 1 arbitrary :: Maybe (Landscape Boolean))
+  log "creating infinite bool landscape doesn't blow the stack"
+  assert $ isJust $ (somewhere 1.0 arbitrary :: Maybe (Landscape Boolean))
 
-  trace "sampling 100 values produces 100 values"
-  assert $ ((==) 100 <<< Array.length <<< sampleHere 100 <$> (somewhere 1 arbitrary :: Maybe (Landscape Boolean))) == Just true
+  log "sampling 100 values produces 100 values"
+  assert $ ((==) 100 <<< Array.length <<< sampleHere 100 <$> (somewhere 1.0 arbitrary :: Maybe (Landscape Boolean))) == Just true
 
-  trace "Can move to sampled value"
-  assert $ (do  l <- (somewhere 1 arbitrary :: Maybe (Landscape Boolean))
+  log "Can move to sampled value"
+  assert $ (do  l <- (somewhere 1.0 arbitrary :: Maybe (Landscape Boolean))
                 x <- Array.head $ Array.drop 50 (sampleHere 100 l)
                 l <- moveTo x l
                 return true) == Just true

@@ -7,82 +7,67 @@ var gulp        = require('gulp')
   , jsValidate  = require('gulp-jsvalidate')
   ;
 
-var paths = {
-    src: 'src/**/*.purs',
-    bowerSrc: [
-      'bower_components/purescript-*/src/**/*.purs',
-      'bower_components/purescript-*/src/**/*.purs.hs'
-    ],
-    dest: '',
-    docs: {
-        'StrongCheck': {
-            dest: 'README.md',
-            src: 'src/**/*.purs'
-        }
-    },
-    test: 'test/**/*.purs'
-};
-
-var options = {
-    test: {
-        main: 'Test.Main',
-        output: 'output/test.js'
-    }
-};
-
-function compile (compiler, src, opts) {
-    var psc = compiler(opts);
-    psc.on('error', function(e) {
-        console.error(e.message);
-        psc.end();
-    });
-    return gulp.src(src.concat(paths.bowerSrc))
-        .pipe(psc)
-        .pipe(gulp.dest(paths.dest))
-        .pipe(jsValidate());
-};
-
-function docs (target) {
-    return function() {
-        var docgen = purescript.pscDocs();
-        docgen.on('error', function(e) {
-            console.error(e.message);
-            docgen.end();
-        });
-        return gulp.src(paths.docs[target].src)
-            .pipe(docgen)
-            .pipe(gulp.dest(paths.docs[target].dest));
-    }
-}
 
 function sequence () {
     var args = [].slice.apply(arguments);
     return function() {
         runSequence.apply(null, args);
-    }
+    };
 }
 
-gulp.task('browser', function() {
-    return compile(purescript.psc, [paths.src].concat(paths.bowerSrc), {})
+var sources = [
+    'src/**/*.purs',
+    'bower_components/purescript-*/src/**/*.purs'
+];
+var foreigns = [
+    'src/**/*.js',
+    'bower_components/purescript-*/src/**/*.js'
+];
+
+var testSources = [
+    'test/**/*.purs'
+];
+var testForeigns = [
+    'test/**/*.js'
+];
+
+gulp.task('docs', function() {
+    return purescript.pscDocs({
+        src: sources,
+        docgen: {
+            "Test.StrongCheck": "docs/Test/StrongCheck.md",
+            "Test.StrongCheck.Gen": "docs/Test/StrongCheck/Gen.md",
+            "Test.StrongCheck.Landscape": "docs/Test/StrongCheck/Landscape.md",
+            "Test.StrongCheck.Perturb": "docs/Test/StrongCheck/Perturb.md"
+        }
+    });
 });
 
 gulp.task('make', function() {
-    return compile(purescript.pscMake, [paths.src].concat(paths.bowerSrc), {})
+    return purescript.psc({
+        src: sources,
+        ffi: foreigns
+    });
 });
 
-gulp.task('test', function() {
-    return compile(purescript.psc, [paths.src, paths.test].concat(paths.bowerSrc), options.test)
-        .pipe(run('node').exec());
+gulp.task('test-make', function() {
+    return purescript.psc({
+        src: sources.concat(testSources),
+        ffi: foreigns.concat(testForeigns)
+    });
 });
 
-gulp.task('docs', docs('StrongCheck'));
 
-gulp.task('watch-browser', function() {
-    gulp.watch(paths.src, sequence('browser', 'docs'));
+
+gulp.task('test', ['test-make'], function() {
+    return purescript.pscBundle({
+        src: 'output/**/*.js',
+        main: 'Test.Main',
+        output: "dist/test.js"
+    }).pipe(run("node dist/test.js"));
 });
 
-gulp.task('watch-make', function() {
-    gulp.watch(paths.src, sequence('make', 'docs'));
-});
 
 gulp.task('default', sequence('make', 'docs'));
+
+
