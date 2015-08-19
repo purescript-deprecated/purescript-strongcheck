@@ -1,4 +1,8 @@
-# PureScript-StrongCheck
+# purescript-strongcheck
+
+[![Latest release](http://img.shields.io/bower/v/purescript-strongcheck.svg)](https://github.com/purescript-contrib/purescript-strongcheck/releases)
+[![Build Status](https://travis-ci.org/purescript-contrib/purescript-strongcheck.svg?branch=master)](https://travis-ci.org/purescript-contrib/purescript-strongcheck)
+[![Maintainer: garyb](https://img.shields.io/badge/maintainer-slamdata-lightgrey.svg)](http://github.com/slamdata)
 
 ## Installation
 
@@ -6,7 +10,7 @@
 bower install purescript-strongcheck
 ```
 
-## Documentation
+## Module documentation
 
 - [Test.StrongCheck](docs/Test/StrongCheck.md)
 - [Test.StrongCheck.Gen](docs/Test/StrongCheck/Gen.md)
