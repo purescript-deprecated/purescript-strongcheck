@@ -3,17 +3,8 @@
 var gulp        = require('gulp')
   , purescript  = require('gulp-purescript')
   , run         = require('gulp-run')
-  , runSequence = require('run-sequence')
   , jsValidate  = require('gulp-jsvalidate')
   ;
-
-
-function sequence () {
-    var args = [].slice.apply(arguments);
-    return function() {
-        runSequence.apply(null, args);
-    };
-}
 
 var sources = [
     'src/**/*.purs',
@@ -57,8 +48,6 @@ gulp.task('test-make', function() {
     });
 });
 
-
-
 gulp.task('test', ['test-make'], function() {
     return purescript.pscBundle({
         src: 'output/**/*.js',
@@ -67,7 +56,4 @@ gulp.task('test', ['test-make'], function() {
     }).pipe(run("node dist/test.js"));
 });
 
-
-gulp.task('default', sequence('make', 'docs'));
-
-
+gulp.task('default', ['make', 'docs']);
