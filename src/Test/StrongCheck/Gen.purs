@@ -349,19 +349,19 @@ nChooseKL k (L.Cons x xs) = (((L.singleton x) <>) <$> (nChooseKL (k - 1) xs)) <>
 -- | Filters a generator to produce only values satisfying the specified
 -- | predicate.
 suchThat :: forall f a. (Monad f) => GenT f a -> (a -> Boolean) -> GenT f a
-suchThat g p = transGen f unit g where
-  f _ a = Tuple unit $ if p a then Just a else Nothing 
+suchThat g p = g `suchThatMaybe` p >>= maybe (sized next) return
+  where
+  next n = resize (n + 1) (g `suchThat` p)
 
--- | Filters a generator to produce only values satisfying the specified
--- | predicate, but gives up and produces Nothing after the specified number
--- | of attempts.
-suchThatMaybe :: forall f a. (Monad f) => Int -> GenT f a -> (a -> Boolean) -> GenT f (Maybe a)
-suchThatMaybe n g p = transGen f 0 g where
-  f i a = if p a
-          then Tuple 0 (Just $ Just a)
-          else if i >= n
-               then Tuple 0 (Just Nothing)
-               else Tuple (i + 1) Nothing 
+-- | Tries to filter a generator such that it only produces values satisfying the
+-- | specified predicate.
+suchThatMaybe :: forall f a. (Monad f) => GenT f a -> (a -> Boolean) -> GenT f (Maybe a)
+suchThatMaybe g p = sized $ try 0
+  where
+  try _ 0 = return Nothing
+  try k n = do
+    x <- resize (2 * k + n) g
+    if p x then return (Just x) else try (k + 1) (n - 1)
 
 -- | A deterministic generator that produces integers from the specified
 -- | inclusive range, in sequence.
