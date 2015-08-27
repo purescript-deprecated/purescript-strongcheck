@@ -35,7 +35,9 @@ data Mega  = Mega {
   infinite    :: Array String,
   perms       :: Array (Array String),
   combos      :: Array (Array String),
-  chunked     :: Array (Array String) }
+  chunked     :: Array (Array String),
+  suchThat    :: Int
+}
 
 {- TODO: Remaining cases
   , frequency 
@@ -90,6 +92,7 @@ instance arbMega :: Arbitrary Mega where
     perms'      <- collectAll mempty $ perms ["John", "D"]
     combos'     <- collectAll mempty $ nChooseK 2 ["foo", "bar", "baz"]
     chunked'    <- collectAll mempty $ chunked 3 (pure "foo")
+    suchThat'   <- suchThat (chooseInt 0.0 4.0) (/= 2)
     return $ Mega { 
       arrayOf:    arrayOf', 
       arrayOf1:   (case arrayOf1' of Tuple a as -> [a] <> as), 
@@ -105,7 +108,8 @@ instance arbMega :: Arbitrary Mega where
       infinite:   infinite',
       perms:      perms',
       combos:     combos',
-      chunked:    chunked' }
+      chunked:    chunked',
+      suchThat:   suchThat' }
 
 verify_gen :: Mega -> Result
 verify_gen (Mega m) = fold [
@@ -127,7 +131,8 @@ verify_gen (Mega m) = fold [
   m.combos == [ ["foo", "bar"]
               , ["foo", "baz"]
               , ["bar", "baz"]]                       <?> "combos: "      ++ show m.combos,
-  m.chunked == [["foo", "foo", "foo"]]                <?> "chunked: "     ++ show m.chunked]
+  m.chunked == [["foo", "foo", "foo"]]                <?> "chunked: "     ++ show m.chunked,
+  m.suchThat /= 2                               <?> "suchThat: "    ++ show m.suchThat]
 
 main = do
   log "Gen combinators"
