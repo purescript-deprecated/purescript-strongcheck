@@ -1,4 +1,4 @@
-module Test.StrongCheck.Landscape 
+module Test.StrongCheck.Landscape
   ( Decay(..)
   , DriverState(..)
   , DriverStateRec(..)
@@ -20,7 +20,7 @@ module Test.StrongCheck.Landscape
   , unDriverState
   , unLandscape
   , whereAt
-  ) where 
+  ) where
 
 import Prelude
 
@@ -30,7 +30,7 @@ import Data.Tuple (fst, snd)
 import Data.Monoid (mempty)
 import Data.List (List(..))
 
-import Control.Comonad.Cofree (head, tail, Cofree(..), mkCofree)
+import Control.Comonad.Cofree (head, tail, Cofree(), mkCofree)
 import Control.Monad.Trampoline (runTrampoline)
 import qualified Control.Monad.List.Trans as L
 import qualified Data.Machine.Mealy as Mealy
@@ -38,7 +38,7 @@ import qualified Data.Machine.Mealy as Mealy
 import qualified Data.Array as A
 
 import Test.StrongCheck.Perturb (Perturb, perturb)
-import Test.StrongCheck.Gen (GenState(..), Gen(..), toLazyList, updateSeedState, unGenOut, applyGen, infinite)
+import Test.StrongCheck.Gen (GenState(..), Gen(), toLazyList, updateSeedState, unGenOut, applyGen, infinite)
 
 type DriverStateRec a = { value :: a, variance :: Number, state :: GenState }
 
@@ -46,7 +46,7 @@ type LList = L.ListT Lazy
 
 newtype DriverState a = DriverState (DriverStateRec a)
 newtype Landscape a = Landscape (Cofree LList (DriverState a))
-  
+
 type Variance = Number
 type Decay = Number -> Number
 
@@ -66,13 +66,13 @@ whereAt (Landscape v) = (unDriverState (head v)).value
 -- | the entire landscape.
 everywhere' :: forall a. (Perturb a) => GenState -> Decay -> Variance -> Gen a -> LList (Landscape a)
 everywhere' s d v g = L.wrapEffect (go (infinite g) s)
-  where go g s = defer \_ -> 
+  where go g s = defer \_ ->
           let o = unGenOut <$> runTrampoline (applyGen s g)
-          in  maybe L.nil 
-              (\o ->  let a  = fst o.value
-                          g  = snd o.value
-                          s' = o.state
-                      in  L.prepend' (nearby' s' d a v) (go g s')) o
+          in  maybe L.nil
+              (\o' ->  let a  = fst o'.value
+                           g  = snd o'.value
+                           s' = o'.state
+                       in  L.prepend' (nearby' s' d a v) (go g s')) o
 
 -- | Creates a landscape whose initial points are randomly chosen across
 -- | the entire landscape, using the default GenState and Decay.
@@ -91,13 +91,13 @@ somewhere = somewhere' mempty defaultDecay
 -- | Creates a landscape that samples the area around a location.
 nearby' :: forall a. (Perturb a) => GenState -> Decay -> a -> Variance -> Landscape a
 nearby' s d a v = Landscape $ mkCofree (mkState a v s) (loop a s v)
-  where loop a s v = 
+  where loop a s v =
           do  a' <- toLazyList (infinite (perturb v a)) s
               let h = mkState a' v s
               let t = loop a' (updateSeedState s) (d v)
               return $ mkCofree h t
 
--- | Creates a landscape that samples the area around a location, using the 
+-- | Creates a landscape that samples the area around a location, using the
 -- | default GenState and Decay.
 nearby :: forall a. (Perturb a) => a -> Variance -> Landscape a
 nearby = nearby' mempty defaultDecay
@@ -114,7 +114,7 @@ sampleHere n = (<$>) (unDriverState >>> \v -> v.value) <<< sampleHere' n
 moveTo :: forall a. (Eq a, Perturb a) => a -> Landscape a -> Maybe (Landscape a)
 moveTo a v = Landscape <$> moveIt a v
   where moveIt a = force <<< L.head <<< L.filter (\v -> (unDriverState (head v)).value == a) <<< tail <<< unLandscape
-  
+
 unDriverState :: forall a. DriverState a -> DriverStateRec a
 unDriverState (DriverState v) = v
 

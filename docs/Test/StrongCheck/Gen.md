@@ -324,12 +324,11 @@ predicate.
 #### `suchThatMaybe`
 
 ``` purescript
-suchThatMaybe :: forall f a. (Monad f) => Int -> GenT f a -> (a -> Boolean) -> GenT f (Maybe a)
+suchThatMaybe :: forall f a. (Monad f) => GenT f a -> (a -> Boolean) -> GenT f (Maybe a)
 ```
 
-Filters a generator to produce only values satisfying the specified
-predicate, but gives up and produces Nothing after the specified number
-of attempts.
+Tries to filter a generator such that it only produces values satisfying the
+specified predicate.
 
 #### `allInRange`
 
