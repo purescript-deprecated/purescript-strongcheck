@@ -111,7 +111,7 @@ Creates a landscape that samples the area around a location.
 nearby :: forall a. (Perturb a) => a -> Variance -> Landscape a
 ```
 
-Creates a landscape that samples the area around a location, using the 
+Creates a landscape that samples the area around a location, using the
 default GenState and Decay.
 
 #### `sampleHere'`
