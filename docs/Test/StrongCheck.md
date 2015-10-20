@@ -185,7 +185,7 @@ _left-associative / precedence -1_
 #### `(===)`
 
 ``` purescript
-(===) :: forall a b. (Eq a, Show a) => a -> a -> Result
+(===) :: forall a. (Eq a, Show a) => a -> a -> Result
 ```
 
 _left-associative / precedence -1_
@@ -193,7 +193,7 @@ _left-associative / precedence -1_
 #### `(/==)`
 
 ``` purescript
-(/==) :: forall a b. (Eq a, Show a) => a -> a -> Result
+(/==) :: forall a. (Eq a, Show a) => a -> a -> Result
 ```
 
 _left-associative / precedence -1_
@@ -245,7 +245,7 @@ statCheckPure :: forall prop. (Testable prop) => Seed -> Number -> prop -> Resul
 statCheck :: forall prop. (Testable prop) => Number -> prop -> QC Unit
 ```
 
-Checks that the proposition has a certain probability of being true for 
+Checks that the proposition has a certain probability of being true for
 arbitrary values.
 
 #### `assert`
@@ -255,6 +255,36 @@ assert :: forall prop. (Testable prop) => prop -> QC Unit
 ```
 
 Checks that the specified proposition holds. Useful for unit tests.
+
+#### `runAlphaNumString`
+
+``` purescript
+runAlphaNumString :: AlphaNumString -> String
+```
+
+#### `runSignum`
+
+``` purescript
+runSignum :: Signum -> Int
+```
+
+#### `runPositive`
+
+``` purescript
+runPositive :: Positive -> Number
+```
+
+#### `runNegative`
+
+``` purescript
+runNegative :: Negative -> Number
+```
+
+#### `runNonZero`
+
+``` purescript
+runNonZero :: NonZero -> Number
+```
 
 #### `runArbEnum`
 

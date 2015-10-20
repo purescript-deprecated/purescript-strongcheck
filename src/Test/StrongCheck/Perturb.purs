@@ -30,7 +30,7 @@ import Data.Monoid (mempty)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Enum (Cardinality(..), Enum, cardinality)
-import Data.Int (fromNumber, toNumber) 
+import Data.Int (fromNumber, toNumber)
 import Data.Functor.Invariant (Invariant)
 import qualified Data.String as S
 import qualified Data.Array as A
@@ -92,7 +92,7 @@ nonPerturber = Perturber {
 searchIn' :: forall a. (Perturb a) => Attempts -> Int -> (a -> Boolean) -> a -> Gen a
 searchIn' (Attempts k) n f a = search0 k 1.0
   where
-  search0 :: Int -> Number -> Gen a 
+  search0 :: Int -> Number -> Gen a
   search0 k d = if k <= 0
                 then mempty
                 else do
@@ -160,7 +160,7 @@ boundedInt :: Int -> Int -> Perturber Int
 boundedInt aInt bInt =
   let a = toNumber aInt
       b = toNumber bInt
-      
+
       l = floor $ min a b
       u = ceil $ max a b
 
@@ -179,7 +179,7 @@ boundedInt aInt bInt =
         pure i
 
       dist' :: Int -> Int -> Number
-      dist' a b = abs $ toNumber (a - b)
+      dist' x y = abs $ toNumber (x - y)
 
       dims' = const 1.0
 
@@ -217,7 +217,7 @@ instance perturbNumber :: Perturb Number where
           dist' a b =
             let from y = Math.log(y + 1.0) / k0
             in  (Math.min 1.0) <<< Math.abs <<< from $ Math.abs (a - b)
-                
+
           dims' :: Number -> Number
           dims' = const 1.0
 
@@ -225,7 +225,7 @@ instance perturbInt :: Perturb Int where
   perturber = Perturber {perturb: perturb', dist: dist', dims: dims'}
     where perturb' 0.0 n = pure n
           perturb' d n = do
-            u <- uniform 
+            u <- uniform
             s <- runSignum <$> arbitrary
             pure $ fromMaybe n $ fromNumber $ Math.round (toNumber s * (Math.exp (k0 * (u * d)) - 1.0) + toNumber n)
 
@@ -245,7 +245,7 @@ instance perturbList :: (Perturb a) => Perturb (L.List a) where
           dist' a b = toDist $ L.zipWith dist a b
 
           dims' = toNumber <<< L.length
-            
+
 instance perturbChar :: Perturb Char where
   perturber = Perturber { perturb : perturb', dist : dist', dims : dims' }
     where
