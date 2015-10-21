@@ -54,7 +54,7 @@ import Data.Traversable
 import Math hiding (log)
 import Data.Char
 
-import qualified Data.Array.Unsafe as AU 
+import qualified Data.Array.Unsafe as AU
 import qualified Data.String as S
 import qualified Data.Array as A
 import qualified Data.Maybe.Unsafe as MU
@@ -90,11 +90,11 @@ data Result = Success | Failed String
 (<?>) true  = const Success
 (<?>) false = Failed
 
-(===) :: forall a b. (Eq a, Show a) => a -> a -> Result
+(===) :: forall a. (Eq a, Show a) => a -> a -> Result
 (===) a b = a == b <?> msg
   where msg = show a ++ " /= " ++ show b
 
-(/==) :: forall a b. (Eq a, Show a) => a -> a -> Result
+(/==) :: forall a. (Eq a, Show a) => a -> a -> Result
 (/==) a b = a /= b <?> msg
   where msg = show a ++ " == " ++ show b
 
@@ -118,12 +118,12 @@ smallCheck prop = check smallCheckPure prop
 
 statCheckPure :: forall prop. (Testable prop) => Seed -> Number -> prop -> Result
 statCheckPure s freq prop = try 100 where
-  try :: Int -> Result 
+  try :: Int -> Result
   try x = let measure :: Int -> Number
               measure n = let results = quickCheckPure n s prop
                           in  toNumber $ (countSuccesses results) / (A.length results)
 
-              measure' :: Int -> Array Number 
+              measure' :: Int -> Array Number
               measure' 0 = []
               measure' n = measure' (n - 1) <> [measure (n * x)]
 
@@ -131,7 +131,7 @@ statCheckPure s freq prop = try 100 where
               freqs = measure' 4
 
               dists :: Array Number
-              dists = (Math.abs <<< (-) freq) <$> freqs 
+              dists = (Math.abs <<< (-) freq) <$> freqs
 
               dirs :: Array Number
               dirs  = A.zipWith (\a b -> a - b) ([1.0] <> dists) dists
@@ -142,12 +142,12 @@ statCheckPure s freq prop = try 100 where
               succs :: Array Number
               succs = A.filter ((<=) 0.0) dirs
 
-          in  if fails > 1 then 
+          in  if fails > 1 then
                 if x < 1000000 then try (x * 10)
                 else Failed $ "Divergence of statistical test: freqs = " ++ show freqs ++ ", dists = " ++ show dists ++ ", dirs = " ++ show dirs ++ ", fails: " ++ show fails
               else maybe (Failed "Error!") (\l -> if l > 0.5 then Failed $ "Final convergence distance too low: " ++ show l else Success) (A.last succs)
 
--- | Checks that the proposition has a certain probability of being true for 
+-- | Checks that the proposition has a certain probability of being true for
 -- | arbitrary values.
 statCheck :: forall prop. (Testable prop) => Number -> prop -> QC Unit
 statCheck freq prop = do
@@ -188,14 +188,19 @@ countSuccesses fa = countSuccesses' 0 (toList fa)
 maxNumber :: Number
 maxNumber = 9007199254740992.0
 
+runAlphaNumString :: AlphaNumString -> String
 runAlphaNumString (AlphaNumString s) = s
 
+runSignum :: Signum -> Int
 runSignum (Signum n) = n
 
+runPositive :: Positive -> Number
 runPositive (Positive n) = n
 
+runNegative :: Negative -> Number
 runNegative (Negative n) = n
 
+runNonZero :: NonZero -> Number
 runNonZero (NonZero n) = n
 
 runArbEnum :: forall a. ArbEnum a -> a
