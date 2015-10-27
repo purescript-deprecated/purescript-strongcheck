@@ -186,7 +186,7 @@ chooseInt a b =
       numRes = ((+) (min - 0.5) <<< (*) (max - min + 1.0)) <$> uniform
       rounded = M.round <$> numRes
       intRes = fromNumber <$> rounded
-  in fromMaybe 0 <$> intRes 
+  in fromMaybe 0 <$> intRes
 
 -- | Creates a generator that chooses another generator from the specified list
 -- | at random, and then generates a value with that generator.
@@ -199,9 +199,9 @@ frequency :: forall f a. (Monad f) => Tuple Number (GenT f a) -> L.List (Tuple N
 frequency x xs =
   let xxs :: L.List (Tuple Number (GenT f a))
       xxs   = L.Cons x xs
-      
-      total :: Number 
-      total = runAdditive $ fold ((Additive <<< fst) <$> xxs) 
+
+      total :: Number
+      total = runAdditive $ fold ((Additive <<< fst) <$> xxs)
 
       pick :: Number -> GenT f a -> L.List (Tuple Number (GenT f a)) -> GenT f a
       pick _ d L.Nil = d
@@ -209,7 +209,7 @@ frequency x xs =
         if n <= k
         then x
         else pick (n - k) d xs
-             
+
   in do n <- chooseInt 1.0 total
         pick (toNumber n) (snd x) xxs
 
@@ -365,7 +365,7 @@ suchThatMaybe g p = sized $ try 0
 
 -- | A deterministic generator that produces integers from the specified
 -- | inclusive range, in sequence.
-allInRange :: forall f a. (Monad f) => Int -> Int -> GenT f Int
+allInRange :: forall f. (Monad f) => Int -> Int -> GenT f Int
 allInRange min max = GenT $ go min where
   go cur = Mealy.pureMealy $ \s ->
     if cur > max
@@ -417,7 +417,7 @@ runGen n st g = foldGen' f [] st (extend n g)
   where f v a = if A.length v < n
                 then Just $ v <> [a]
                 else Nothing
-        
+
 
 -- | Creates a generator that produces chunks of values in the specified size.
 -- | Will extend the generator if necessary to produce a chunk of the specified
