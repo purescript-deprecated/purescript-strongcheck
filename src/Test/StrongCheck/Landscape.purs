@@ -28,12 +28,10 @@ import Data.Lazy (Lazy(), force, defer)
 import Data.Maybe (Maybe(), maybe)
 import Data.Tuple (fst, snd)
 import Data.Monoid (mempty)
-import Data.List (List(..))
 
 import Control.Comonad.Cofree (head, tail, Cofree(), mkCofree)
 import Control.Monad.Trampoline (runTrampoline)
 import qualified Control.Monad.List.Trans as L
-import qualified Data.Machine.Mealy as Mealy
 
 import qualified Data.Array as A
 
