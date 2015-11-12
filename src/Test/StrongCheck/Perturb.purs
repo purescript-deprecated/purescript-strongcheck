@@ -25,10 +25,10 @@ import Test.StrongCheck
 
 import Data.Traversable (sequence)
 import Data.Foldable (Foldable, find, sum)
-import Data.Tuple (Tuple(..), fst, snd)
+import Data.Tuple (Tuple(..))
 import Data.Monoid (mempty)
 import Data.Either (Either(..))
-import Data.Maybe (Maybe(..), fromMaybe, maybe)
+import Data.Maybe (fromMaybe)
 import Data.Enum (Cardinality(..), Enum, cardinality)
 import Data.Int (fromNumber, toNumber)
 import Data.Functor.Invariant (Invariant)
@@ -206,7 +206,7 @@ instance perturbArbEnum :: (Enum a, Eq a) => Perturb (ArbEnum a) where
 
 instance perturbNumber :: Perturb Number where
   perturber = Perturber { perturb : perturb', dist : dist', dims : dims' }
-    where pertrub' :: Number -> Number -> Gen Number
+    where perturb' :: Number -> Number -> Gen Number
           perturb' 0.0 n = pure n
           perturb' d n = do
             u <- uniform -- 'up to' d
@@ -249,7 +249,7 @@ instance perturbList :: (Perturb a) => Perturb (L.List a) where
 instance perturbChar :: Perturb Char where
   perturber = Perturber { perturb : perturb', dist : dist', dims : dims' }
     where
-    pertrub' :: Number -> Char -> Gen Char
+    perturb' :: Number -> Char -> Gen Char
     perturb' n e = if n < 1.0 / (2.0 * 65536.0) then pure e else (arbitrary :: Gen Char)
 
     dist' a b = if a == b then 0.0 else 1.0 / (2.0 * 65536.0)
