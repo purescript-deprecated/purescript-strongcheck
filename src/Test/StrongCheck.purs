@@ -38,21 +38,20 @@ import Control.Monad.Eff (Eff())
 import Control.Monad.Eff.Console (CONSOLE(), log)
 import Control.Monad.Eff.Random (RANDOM(), random)
 import Control.Monad.Eff.Exception (EXCEPTION(), throwException, error)
-import Control.Monad.Trampoline
-import Control.Bind
+import Control.Monad.Trampoline (runTrampoline)
 
 import Data.Foldable (Foldable)
 import Data.Tuple (Tuple(..))
 import Data.Int (fromNumber, toNumber)
-import Data.Either
-import Data.List
-import Data.Maybe
+import Data.Either (Either(..))
+import Data.List (List(..), toList, length)
+import Data.Maybe (Maybe(..), fromMaybe, maybe)
 
-import Data.Monoid
-import Data.Enum
-import Data.Traversable
+import Data.Monoid (Monoid)
+import Data.Enum (Enum, Cardinality(..), cardinality, succ, pred, toEnum, fromEnum)
+import Data.Traversable (sequence)
 import Math hiding (log)
-import Data.Char
+import Data.Char (toCharCode)
 
 import qualified Data.Array.Unsafe as AU
 import qualified Data.String as S

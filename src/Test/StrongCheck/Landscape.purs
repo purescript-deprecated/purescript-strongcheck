@@ -36,7 +36,7 @@ import qualified Control.Monad.List.Trans as L
 import qualified Data.Array as A
 
 import Test.StrongCheck.Perturb (Perturb, perturb)
-import Test.StrongCheck.Gen (GenState(..), Gen(), toLazyList, updateSeedState, unGenOut, applyGen, infinite)
+import Test.StrongCheck.Gen (GenState(), Gen(), toLazyList, updateSeedState, unGenOut, applyGen, infinite)
 
 type DriverStateRec a = { value :: a, variance :: Number, state :: GenState }
 
