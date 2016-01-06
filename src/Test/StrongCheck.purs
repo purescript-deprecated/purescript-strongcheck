@@ -44,7 +44,7 @@ import Data.Foldable (Foldable)
 import Data.Tuple (Tuple(..))
 import Data.Int (fromNumber, toNumber)
 import Data.Either (Either(..))
-import Data.List (List(..), toList, length)
+import Data.List (List(..), toList, fromList, length)
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 
 import Data.Monoid (Monoid)
@@ -379,6 +379,12 @@ instance coarbArray :: (CoArbitrary a) => CoArbitrary (Array a) where
     else let x = AU.head arr
              xs = AU.tail arr
          in coarbitrary xs <<< coarbitrary x
+
+instance arbList :: (Arbitrary a) => Arbitrary (List a) where
+  arbitrary = (toList :: Array a -> List a) <$> arbitrary
+
+instance coarbList :: (CoArbitrary a) => CoArbitrary (List a) where
+  coarbitrary = coarbitrary <<< (fromList :: List a -> Array a)
 
 instance testableResult :: Testable Result where
   test = return
