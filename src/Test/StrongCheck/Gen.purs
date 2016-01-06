@@ -63,6 +63,7 @@ import Control.Monad.Eff.Console (print, CONSOLE())
 import Control.Monad.Trampoline (runTrampoline, Trampoline())
 import Control.MonadPlus (MonadPlus)
 import Control.Plus (Plus)
+import Control.Lazy as CL
 import Data.Char (fromCharCode)
 import Data.Foldable (fold)
 import Data.Int (fromNumber, toNumber)
@@ -514,3 +515,6 @@ instance plusGenT :: (Monad f) => Plus (GenT f) where
 instance alternativeGenT :: (Monad f) => Alternative (GenT f)
 
 instance monadPlusGenT :: (Monad f) => MonadPlus (GenT f)
+
+instance lazyGenT :: (Monad f) => CL.Lazy (GenT f a) where
+  defer f = GenT $ CL.defer (unGen <<< f)
