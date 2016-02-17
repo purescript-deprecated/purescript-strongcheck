@@ -54,15 +54,15 @@ module Test.StrongCheck.Gen
   , wrapEffect
   ) where
 
-import Prelude
+import Prelude (class Monad, class Bind, class Semigroup, class Applicative, class Apply, class Functor, class Show, Unit, (<<<), ($), bind, (<>), (<*>), return, (<$>), (-), pure, id, (>=), (<), (+), (>), (*), (>>=), (==), (<=), (>>>), flip, (/))
 
-import Control.Alt (Alt, (<|>))
-import Control.Alternative (Alternative)
+import Control.Alt (class Alt, (<|>))
+import Control.Alternative (class Alternative)
 import Control.Monad.Eff (Eff())
 import Control.Monad.Eff.Console (print, CONSOLE())
 import Control.Monad.Trampoline (runTrampoline, Trampoline())
-import Control.MonadPlus (MonadPlus)
-import Control.Plus (Plus)
+import Control.MonadPlus (class MonadPlus)
+import Control.Plus (class Plus)
 import Control.Lazy as CL
 import Data.Char (fromCharCode)
 import Data.Foldable (fold)
@@ -71,19 +71,19 @@ import Data.Int.Bits (shl)
 import Data.Lazy (Lazy(), defer)
 import Data.Maybe (fromMaybe, maybe, Maybe(..))
 import Data.Maybe.Unsafe (fromJust)
-import Data.Monoid (mempty, Monoid)
+import Data.Monoid (mempty, class Monoid)
 import Data.Monoid.Additive (Additive(..), runAdditive)
 import Data.Profunctor (arr, lmap)
 import Data.Profunctor.Strong ((&&&))
 import Data.Tuple (Tuple(..), snd, fst)
 
-import qualified Control.Monad.List.Trans as ListT
-import qualified Data.Array as A
-import qualified Data.Array.Unsafe as AU
-import qualified Data.List as L
-import qualified Data.Machine.Mealy as Mealy
+import Control.Monad.List.Trans as ListT
+import Data.Array as A
+import Data.Array.Unsafe as AU
+import Data.List as L
+import Data.Machine.Mealy as Mealy
 
-import qualified Math as M
+import Math as M
 
 type Size = Int
 type Seed  = Number

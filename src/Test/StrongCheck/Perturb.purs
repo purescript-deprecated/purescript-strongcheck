@@ -1,10 +1,10 @@
 module Test.StrongCheck.Perturb
   ( Attempts(..)
-  , Perturb
+  , class Perturb
   , Perturber(..)
   , PerturberRec(..)
-  , (</\>)
-  , (<\/>)
+  , (</\>), perturberProduct
+  , (<\/>), perturberSum
   , bounded
   , boundedInt
   , dist
@@ -18,25 +18,25 @@ module Test.StrongCheck.Perturb
   , unPerturber
   ) where
 
-import Prelude
+import Prelude (class Functor, class Eq, (<$>), pure, (*), (/), (<), ($), flip, (+), (<<<), const, (==), (-), bind, return, (<=), (>), one, (<*>), (<>), zero)
 
-import Test.StrongCheck.Gen
-import Test.StrongCheck
+import Test.StrongCheck.Gen (Gen, uniform, elements, chunked, takeGen)
+import Test.StrongCheck (ArbEnum(ArbEnum), arbitrary, runArbEnum, runSignum)
 
 import Data.Traversable (sequence)
-import Data.Foldable (Foldable, find, sum)
+import Data.Foldable (class Foldable, find, sum)
 import Data.Tuple (Tuple(..))
 import Data.Monoid (mempty)
 import Data.Either (Either(..))
 import Data.Maybe (fromMaybe)
-import Data.Enum (Cardinality(..), Enum, cardinality)
+import Data.Enum (Cardinality(..), class Enum, cardinality)
 import Data.Int (fromNumber, toNumber)
-import Data.Functor.Invariant (Invariant)
-import qualified Data.String as S
-import qualified Data.Array as A
-import qualified Data.List as L
+import Data.Functor.Invariant (class Invariant)
+import Data.String as S
+import Data.Array as A
+import Data.List as L
 
-import Math
+import Math (abs, round, min, max, ceil, floor, sqrt)
 
 newtype Attempts = Attempts Int
 
@@ -105,11 +105,11 @@ searchIn' (Attempts k) n f a = search0 k 1.0
 searchIn :: forall a. (Perturb a) => (a -> Boolean) -> a -> Gen a
 searchIn = searchIn' (Attempts 1000) 10
 
-infixr 6 </\>
+infixr 6 perturberProduct as </\>
 
 -- | Combines two perturbers to produce a perturber of the product
-(</\>) :: forall a b. Perturber a -> Perturber b -> Perturber (Tuple a b)
-(</\>) (Perturber l) (Perturber r) = Perturber { perturb : perturb', dist : dist', dims : dims' }
+perturberProduct :: forall a b. Perturber a -> Perturber b -> Perturber (Tuple a b)
+perturberProduct (Perturber l) (Perturber r) = Perturber { perturb : perturb', dist : dist', dims : dims' }
   where perturb' d (Tuple a b) =
           let dx = delta (l.dims a + r.dims b) d
               dx2 = dx * dx
@@ -121,11 +121,11 @@ infixr 6 </\>
 
         dims' (Tuple a b) = l.dims a + r.dims b
 
-infixr 6 <\/>
+infixr 6 perturberSum as <\/>
 
 -- | Combines two perturbers to produce a perturber of the sum
-(<\/>) :: forall a b. Perturber a -> Perturber b -> Perturber (Either a b)
-(<\/>) (Perturber l) (Perturber r) = Perturber { perturb : perturb', dist : dist', dims : dims' }
+perturberSum :: forall a b. Perturber a -> Perturber b -> Perturber (Either a b)
+perturberSum (Perturber l) (Perturber r) = Perturber { perturb : perturb', dist : dist', dims : dims' }
   where perturb' d (Left  a) = Left <$> l.perturb d a
         perturb' d (Right b) = Right <$> r.perturb d b
 
@@ -306,4 +306,3 @@ cardDist1 f = f cardinality
 -- Test.StrongCheck.Gen.Gen<u15286> with another type.
 cardPerturb1F :: forall a. (Enum a) => a -> Number -> Cardinality a -> Gen a
 cardPerturb1F a n (Cardinality sz) = if n < 1.0 / (2.0 * toNumber sz) then pure a else (runArbEnum <$> arbitrary)
-

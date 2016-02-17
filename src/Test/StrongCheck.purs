@@ -1,11 +1,11 @@
 module Test.StrongCheck
-  ( (<?>)
-  , (===)
-  , (/==)
+  ( (<?>), withHelp
+  , (===), assertEqual
+  , (/==), assertNotEqual
   , AlphaNumString(..)
-  , Arbitrary
+  , class Arbitrary
   , ArbEnum(..)
-  , CoArbitrary
+  , class CoArbitrary
   , Negative(..)
   , NonZero(..)
   , Positive(..)
@@ -29,10 +29,10 @@ module Test.StrongCheck
   , statCheck
   , statCheckPure
   , test
-  , Testable
+  , class Testable
   ) where
 
-import Prelude
+import Prelude (class Bounded, class Show, class Ord, class Eq, class Semigroup, Unit, bind, return, ($), (<<<), (<$>), id, (==), (<>), pure, (>>>), (<*>), (*), (-), (<), bottom, top, show, (++), compare, negate, (+), unit, (>), (<=), (/), (/=), const)
 
 import Control.Monad.Eff (Eff())
 import Control.Monad.Eff.Console (CONSOLE(), log)
@@ -40,25 +40,25 @@ import Control.Monad.Eff.Random (RANDOM(), random)
 import Control.Monad.Eff.Exception (EXCEPTION(), throwException, error)
 import Control.Monad.Trampoline (runTrampoline)
 
-import Data.Foldable (Foldable)
+import Data.Foldable (class Foldable)
 import Data.Tuple (Tuple(..))
 import Data.Int (fromNumber, toNumber)
 import Data.Either (Either(..))
 import Data.List (List(..), toList, fromList, length)
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 
-import Data.Monoid (Monoid)
-import Data.Enum (Enum, Cardinality(..), cardinality, succ, pred, toEnum, fromEnum)
+import Data.Monoid (class Monoid)
+import Data.Enum (class Enum, Cardinality(..), cardinality, succ, pred, toEnum, fromEnum)
 import Data.Traversable (sequence)
-import Math hiding (log)
+import Math (floor)
 import Data.Char (toCharCode)
 
-import qualified Data.Array.Unsafe as AU
-import qualified Data.String as S
-import qualified Data.Array as A
-import qualified Data.Maybe.Unsafe as MU
+import Data.Array.Unsafe as AU
+import Data.String as S
+import Data.Array as A
+import Data.Maybe.Unsafe as MU
 
-import Test.StrongCheck.Gen
+import Test.StrongCheck.Gen (Seed, Gen, GenState(GenState), repeatable, perturbGen, charGen, uniform, chooseInt, collectAll, sample')
 
 class Arbitrary t where
   arbitrary :: Gen t
@@ -85,17 +85,23 @@ type QC a = forall eff. Eff (console :: CONSOLE, random :: RANDOM, err :: EXCEPT
 
 data Result = Success | Failed String
 
-(<?>) :: Boolean -> String -> Result
-(<?>) true  = const Success
-(<?>) false = Failed
+withHelp :: Boolean -> String -> Result
+withHelp true  = const Success
+withHelp false = Failed
 
-(===) :: forall a. (Eq a, Show a) => a -> a -> Result
-(===) a b = a == b <?> msg
+infix 2 withHelp as <?>
+
+assertEqual :: forall a. (Eq a, Show a) => a -> a -> Result
+assertEqual a b = a == b <?> msg
   where msg = show a ++ " /= " ++ show b
 
-(/==) :: forall a. (Eq a, Show a) => a -> a -> Result
-(/==) a b = a /= b <?> msg
+infix 2 assertEqual as ===
+
+assertNotEqual :: forall a. (Eq a, Show a) => a -> a -> Result
+assertNotEqual a b = a /= b <?> msg
   where msg = show a ++ " == " ++ show b
+
+infix 2 assertNotEqual as /==
 
 quickCheckPure :: forall prop. (Testable prop) => Int -> Seed -> prop -> Array Result
 quickCheckPure n s prop = runTrampoline $ sample' n (defState s) (test prop)
@@ -405,4 +411,3 @@ cardPerturb1 f = f cardinality
 -- ScopedTypeVariables
 arbEnumCardinality :: forall a. (Enum a) => (Cardinality a -> Cardinality (ArbEnum a)) -> Cardinality (ArbEnum a)
 arbEnumCardinality f = f cardinality
-
