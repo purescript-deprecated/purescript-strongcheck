@@ -22,7 +22,7 @@ module Test.StrongCheck.Landscape
   , whereAt
   ) where
 
-import Prelude
+import Prelude (class Eq, (<$>), (<<<), (==), (>>>), ($), return, bind, (/))
 
 import Data.Lazy (Lazy(), force, defer)
 import Data.Maybe (Maybe(), maybe)
@@ -31,11 +31,11 @@ import Data.Monoid (mempty)
 
 import Control.Comonad.Cofree (head, tail, Cofree(), mkCofree)
 import Control.Monad.Trampoline (runTrampoline)
-import qualified Control.Monad.List.Trans as L
+import Control.Monad.List.Trans as L
 
-import qualified Data.Array as A
+import Data.Array as A
 
-import Test.StrongCheck.Perturb (Perturb, perturb)
+import Test.StrongCheck.Perturb (class Perturb, perturb)
 import Test.StrongCheck.Gen (GenState(), Gen(), toLazyList, updateSeedState, unGenOut, applyGen, infinite)
 
 type DriverStateRec a = { value :: a, variance :: Number, state :: GenState }

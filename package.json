@@ -11,6 +11,6 @@
     "gulp-jsvalidate": "^2.0.0",
     "gulp-purescript": "^0.7.0",
     "gulp-run": "^1.6.8",
-    "purescript": "^0.7.4"
+    "purescript": "^0.8.0"
   }
 }
