@@ -1,5 +1,3 @@
-// module Test.StrongCheck.Gen
-
 exports.float32ToInt32 = function(n) {
     var arr = new ArrayBuffer(4),
         fv = new Float32Array(arr),

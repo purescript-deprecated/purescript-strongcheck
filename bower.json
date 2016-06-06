@@ -14,18 +14,16 @@
     "bower_components",
     "node_modules",
     "output",
-    "tests",
-    "tmp",
     "bower.json",
-    "gulpfile.js",
     "package.json"
   ],
   "dependencies": {
-    "purescript-console": "^0.1.0",
-    "purescript-enums": "^0.7.0",
-    "purescript-exceptions": "^0.3.0",
-    "purescript-free": "^0.9.0",
-    "purescript-machines": "^0.8.1",
-    "purescript-random": "^0.2.1"
+    "purescript-console": "^1.0.0",
+    "purescript-enums": "^1.0.0",
+    "purescript-exceptions": "^1.0.0",
+    "purescript-free": "^1.0.0",
+    "purescript-machines": "^1.0.0",
+    "purescript-random": "^1.0.0",
+    "purescript-arrays": "^1.0.0"
   }
 }
