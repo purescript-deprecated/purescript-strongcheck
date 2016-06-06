@@ -1,11 +1,11 @@
 module Test.StrongCheck
-  ( (<?>)
-  , (===)
-  , (/==)
+  ( (<?>), failWith
+  , (===), equals
+  , (/==), nequals
   , AlphaNumString(..)
-  , Arbitrary
+  , class Arbitrary
   , ArbEnum(..)
-  , CoArbitrary
+  , class CoArbitrary
   , Negative(..)
   , NonZero(..)
   , Positive(..)
@@ -29,36 +29,32 @@ module Test.StrongCheck
   , statCheck
   , statCheckPure
   , test
-  , Testable
+  , class Testable
   ) where
 
 import Prelude
-
-import Control.Monad.Eff (Eff())
-import Control.Monad.Eff.Console (CONSOLE(), log)
-import Control.Monad.Eff.Random (RANDOM(), random)
-import Control.Monad.Eff.Exception (EXCEPTION(), throwException, error)
-import Control.Monad.Trampoline (runTrampoline)
-
-import Data.Foldable (Foldable)
-import Data.Tuple (Tuple(..))
-import Data.Int (fromNumber, toNumber)
-import Data.Either (Either(..))
-import Data.List (List(..), toList, fromList, length)
-import Data.Maybe (Maybe(..), fromMaybe, maybe)
-
-import Data.Monoid (Monoid)
-import Data.Enum (Enum, Cardinality(..), cardinality, succ, pred, toEnum, fromEnum)
-import Data.Traversable (sequence)
-import Math hiding (log)
-import Data.Char (toCharCode)
-
-import qualified Data.Array.Unsafe as AU
-import qualified Data.String as S
-import qualified Data.Array as A
-import qualified Data.Maybe.Unsafe as MU
-
 import Test.StrongCheck.Gen
+import Data.Array as A
+import Data.Array as Array
+import Data.Array.Partial as AU
+import Data.String as S
+import Math as Math
+import Control.Monad.Eff (Eff)
+import Control.Monad.Eff.Console (CONSOLE, log)
+import Control.Monad.Eff.Exception (EXCEPTION, throwException, error)
+import Control.Monad.Eff.Random (RANDOM, random)
+import Control.Monad.Trampoline (runTrampoline)
+import Data.Array (uncons)
+import Data.Char (toCharCode)
+import Data.Either (Either(..))
+import Data.Enum (class BoundedEnum, class Enum, Cardinality(..), cardinality, succ, pred, toEnum, fromEnum)
+import Data.Foldable (class Foldable)
+import Data.Int (fromNumber, toNumber)
+import Data.List (fromFoldable, List(..), length)
+import Data.Maybe (fromJust, Maybe(..), fromMaybe, maybe)
+import Data.Monoid (class Monoid)
+import Data.Traversable (sequence)
+import Data.Tuple (Tuple(..))
 
 class Arbitrary t where
   arbitrary :: Gen t
@@ -85,17 +81,20 @@ type QC a = forall eff. Eff (console :: CONSOLE, random :: RANDOM, err :: EXCEPT
 
 data Result = Success | Failed String
 
-(<?>) :: Boolean -> String -> Result
-(<?>) true  = const Success
-(<?>) false = Failed
+infix 1 failWith as <?>
+failWith :: Boolean -> String -> Result
+failWith true  = const Success
+failWith false = Failed
 
-(===) :: forall a. (Eq a, Show a) => a -> a -> Result
-(===) a b = a == b <?> msg
-  where msg = show a ++ " /= " ++ show b
+infix 5 equals as ===
+equals :: forall a. (Eq a, Show a) => a -> a -> Result
+equals a b = a == b <?> msg
+  where msg = show a <> " /= " <> show b
 
-(/==) :: forall a. (Eq a, Show a) => a -> a -> Result
-(/==) a b = a /= b <?> msg
-  where msg = show a ++ " == " ++ show b
+infix 5 nequals as /==
+nequals :: forall a. (Eq a, Show a) => a -> a -> Result
+nequals a b = a /= b <?> msg
+  where msg = show a <> " == " <> show b
 
 quickCheckPure :: forall prop. (Testable prop) => Int -> Seed -> prop -> Array Result
 quickCheckPure n s prop = runTrampoline $ sample' n (defState s) (test prop)
@@ -143,8 +142,8 @@ statCheckPure s freq prop = try 100 where
 
           in  if fails > 1 then
                 if x < 1000000 then try (x * 10)
-                else Failed $ "Divergence of statistical test: freqs = " ++ show freqs ++ ", dists = " ++ show dists ++ ", dirs = " ++ show dirs ++ ", fails: " ++ show fails
-              else maybe (Failed "Error!") (\l -> if l > 0.5 then Failed $ "Final convergence distance too low: " ++ show l else Success) (A.last succs)
+                else Failed $ "Divergence of statistical test: freqs = " <> show freqs <> ", dists = " <> show dists <> ", dirs = " <> show dirs <> ", fails: " <> show fails
+              else maybe (Failed "Error!") (\l -> if l > 0.5 then Failed $ "Final convergence distance too low: " <> show l else Success) (A.last succs)
 
 -- | Checks that the proposition has a certain probability of being true for
 -- | arbitrary values.
@@ -165,11 +164,11 @@ check f prop = do
   seed <- random
   let results   = f seed prop
   let successes = countSuccesses results
-  log $ show successes ++ "/" ++ show (length $ toList results) ++ " test(s) passed."
+  log $ show successes <> "/" <> show (length $ fromFoldable results) <> " test(s) passed."
   throwOnFirstFailure 1 results
 
 throwOnFirstFailure :: forall f. (Foldable f) => Int -> f Result -> QC Unit
-throwOnFirstFailure n fr = throwOnFirstFailure' n (toList fr)
+throwOnFirstFailure n fr = throwOnFirstFailure' n (fromFoldable fr)
   where
   throwOnFirstFailure' :: Int -> List Result -> QC Unit
   throwOnFirstFailure' _ Nil = pure unit
@@ -178,7 +177,7 @@ throwOnFirstFailure n fr = throwOnFirstFailure' n (toList fr)
 
 
 countSuccesses :: forall f. (Foldable f) => f Result -> Int
-countSuccesses fa = countSuccesses' 0 (toList fa)
+countSuccesses fa = countSuccesses' 0 (fromFoldable fa)
   where
   countSuccesses' acc Nil = acc
   countSuccesses' acc (Cons Success rest) = countSuccesses' (acc + 1) rest
@@ -212,13 +211,13 @@ instance eqResult :: Eq Result where
 
 instance showResult :: Show Result where
   show Success      = "Success"
-  show (Failed msg) = "Failed: " ++ msg
+  show (Failed msg) = "Failed: " <> msg
 
 instance semigroupResult :: Semigroup Result where
   append Success Success          = Success
   append (Failed msg) Success     = Failed msg
   append Success (Failed msg)     = Failed msg
-  append (Failed m1) (Failed m2)  = Failed (m1 ++ "\n" ++ m2)
+  append (Failed m1) (Failed m2)  = Failed (m1 <> "\n" <> m2)
 
 instance monoidResult :: Monoid Result where
   mempty = Success
@@ -229,7 +228,7 @@ instance arbNumber :: Arbitrary Number where
 instance arbInt :: Arbitrary Int where
   arbitrary = do
     n <- uniform
-    pure <<< MU.fromJust <<< fromNumber <<< Math.floor $ toNumber ((top - bottom) + bottom) * n
+    pure <<< fromJust <<< fromNumber <<< Math.floor $ toNumber ((top - bottom) + bottom) * n
 
 
 instance coarbNumber :: CoArbitrary Number where
@@ -254,21 +253,21 @@ instance arbNonZero :: Arbitrary NonZero where
   arbitrary = do n <- arbitrary
                  b <- arbitrary
                  let sign = if b then 1.0 else -1.0
-                 return $ NonZero (n * maxNumber * sign)
+                 pure $ NonZero (n * maxNumber * sign)
 
 instance coarbNonZero :: CoArbitrary NonZero where
   coarbitrary (NonZero n) = coarbitrary n
 
 instance arbSignum :: Arbitrary Signum where
   arbitrary = do b <- arbitrary
-                 return $ Signum (if b then 1 else -1)
+                 pure $ Signum (if b then 1 else -1)
 
 instance coarbSignum :: CoArbitrary Signum where
   coarbitrary (Signum n) = coarbitrary n
 
 instance arbArbEnum :: (Enum a) => Arbitrary (ArbEnum a) where
   arbitrary = ArbEnum <$> cardPerturb1 f where
-    f (Cardinality sz) = MU.fromJust <<< toEnum <$> chooseInt 0.0 (toNumber sz - 1.0)
+    f (Cardinality sz) = fromJust <<< toEnum <$> chooseInt 0.0 (toNumber sz - 1.0)
 
 instance coarbArbEnum :: (Enum a) => CoArbitrary (ArbEnum a) where
   coarbitrary (ArbEnum e) = coarbitrary (fromEnum e)
@@ -281,27 +280,25 @@ instance ordArbEnum :: (Ord a) => Ord (ArbEnum a) where
   compare (ArbEnum a) (ArbEnum b) = compare a b
 
 instance showArbEnum :: (Show a) => Show (ArbEnum a) where
-  show (ArbEnum a) = "ArbEnum " ++ show a
+  show (ArbEnum a) = "ArbEnum " <> show a
 
 instance boundedArbEnum :: (Bounded a) => Bounded (ArbEnum a) where
   top = ArbEnum top
   bottom = ArbEnum bottom
 
 instance enumArbEnum :: (Enum a) => Enum (ArbEnum a) where
-  cardinality = arbEnumCardinality f where f (Cardinality sz) = Cardinality sz
-
   pred (ArbEnum e) = ArbEnum <$> pred e
-
   succ (ArbEnum e) = ArbEnum <$> succ e
 
+instance boundedEnumArbitrary :: (BoundedEnum a) => BoundedEnum (ArbEnum a) where
+  cardinality = arbEnumCardinality f where f (Cardinality sz) = Cardinality sz
   toEnum v = ArbEnum <$> toEnum v
-
   fromEnum (ArbEnum e) = fromEnum e
 
 instance arbBoolean :: Arbitrary Boolean where
   arbitrary = do
     n <- uniform
-    return $ (n < 0.5)
+    pure $ (n < 0.5)
 
 instance coarbBoolean :: CoArbitrary Boolean where
   coarbitrary true  = perturbGen 1.0
@@ -322,12 +319,12 @@ instance coarbString :: CoArbitrary String where
 instance arbAlphaNumString :: Arbitrary AlphaNumString where
   arbitrary = do
     arrNum <- arbitrary
-    return $ MU.fromJust $ (AlphaNumString <<< S.fromCharArray) <$> sequence (lookup <$> arrNum) where
+    pure $ fromJust $ (AlphaNumString <<< S.fromCharArray) <$> sequence (lookup <$> arrNum) where
       chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
       lookup x = S.charAt index chars where
         index = fromMaybe 0 $ fromNumber $ Math.round
-                (Math.min (toNumber (S.length chars - 1)) (floor (x * toNumber (S.length chars))))
+                (min (toNumber (S.length chars - 1)) (Math.floor (x * toNumber (S.length chars))))
 
 instance coarbAlphaNumString :: CoArbitrary AlphaNumString where
   coarbitrary (AlphaNumString s) = coarbitrary s
@@ -367,31 +364,31 @@ instance coarbFunction :: (Arbitrary a, CoArbitrary b) => CoArbitrary (a -> b) w
 instance arbArray :: (Arbitrary a) => Arbitrary (Array a) where
   arbitrary = do
     b <- arbitrary
-    if b then return [] else do
+    if b then pure [] else do
       a <- arbitrary
       as <- arbitrary
-      return $ [a] <> as
+      pure $ [a] <> as
 
 instance coarbArray :: (CoArbitrary a) => CoArbitrary (Array a) where
   coarbitrary arr =
-    if A.length arr == 0
-    then id
-    else let x = AU.head arr
-             xs = AU.tail arr
-         in coarbitrary xs <<< coarbitrary x
+    case uncons arr of
+      Nothing ->
+        id
+      Just {head: x, tail: xs} ->
+        coarbitrary xs <<< coarbitrary x
 
 instance arbList :: (Arbitrary a) => Arbitrary (List a) where
-  arbitrary = (toList :: Array a -> List a) <$> arbitrary
+  arbitrary = (fromFoldable :: Array a -> List a) <$> arbitrary
 
 instance coarbList :: (CoArbitrary a) => CoArbitrary (List a) where
-  coarbitrary = coarbitrary <<< (fromList :: List a -> Array a)
+  coarbitrary = coarbitrary <<< (Array.fromFoldable :: List a -> Array a)
 
 instance testableResult :: Testable Result where
-  test = return
+  test = pure
 
 instance testableBoolean :: Testable Boolean where
-  test true = return Success
-  test false = return $ Failed "Test returned false"
+  test true = pure Success
+  test false = pure $ Failed "Test returned false"
 
 instance testableFunction :: (Arbitrary t, Testable prop) => Testable (t -> prop) where
   test f = do
@@ -405,4 +402,3 @@ cardPerturb1 f = f cardinality
 -- ScopedTypeVariables
 arbEnumCardinality :: forall a. (Enum a) => (Cardinality a -> Cardinality (ArbEnum a)) -> Cardinality (ArbEnum a)
 arbEnumCardinality f = f cardinality
-

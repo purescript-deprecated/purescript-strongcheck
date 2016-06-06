@@ -32,9 +32,9 @@ import Data.Maybe (fromMaybe)
 import Data.Enum (Cardinality(..), Enum, cardinality)
 import Data.Int (fromNumber, toNumber)
 import Data.Functor.Invariant (Invariant)
-import qualified Data.String as S
-import qualified Data.Array as A
-import qualified Data.List as L
+import Data.String as S
+import Data.Array as A
+import Data.List as L
 
 import Math
 
@@ -105,11 +105,11 @@ searchIn' (Attempts k) n f a = search0 k 1.0
 searchIn :: forall a. (Perturb a) => (a -> Boolean) -> a -> Gen a
 searchIn = searchIn' (Attempts 1000) 10
 
-infixr 6 </\>
+infixr 6 combinePerturberProduct as </\>
 
 -- | Combines two perturbers to produce a perturber of the product
-(</\>) :: forall a b. Perturber a -> Perturber b -> Perturber (Tuple a b)
-(</\>) (Perturber l) (Perturber r) = Perturber { perturb : perturb', dist : dist', dims : dims' }
+combinePerturberProduct :: forall a b. Perturber a -> Perturber b -> Perturber (Tuple a b)
+combinePerturberProduct (Perturber l) (Perturber r) = Perturber { perturb : perturb', dist : dist', dims : dims' }
   where perturb' d (Tuple a b) =
           let dx = delta (l.dims a + r.dims b) d
               dx2 = dx * dx
@@ -121,11 +121,11 @@ infixr 6 </\>
 
         dims' (Tuple a b) = l.dims a + r.dims b
 
-infixr 6 <\/>
+infixr 6 combinePerturberSum as <\/>
 
 -- | Combines two perturbers to produce a perturber of the sum
-(<\/>) :: forall a b. Perturber a -> Perturber b -> Perturber (Either a b)
-(<\/>) (Perturber l) (Perturber r) = Perturber { perturb : perturb', dist : dist', dims : dims' }
+combinePerturberSum :: forall a b. Perturber a -> Perturber b -> Perturber (Either a b)
+combinePerturberSum (Perturber l) (Perturber r) = Perturber { perturb : perturb', dist : dist', dims : dims' }
   where perturb' d (Left  a) = Left <$> l.perturb d a
         perturb' d (Right b) = Right <$> r.perturb d b
 
