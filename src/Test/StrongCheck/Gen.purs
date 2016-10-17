@@ -71,7 +71,7 @@ import Data.Array as A
 import Data.Array.Partial as AP
 import Data.Char (fromCharCode)
 import Data.Foldable (fold)
-import Data.Int (fromNumber, toNumber)
+import Data.Int (toNumber)
 import Data.Lazy (Lazy, defer)
 import Data.List as L
 import Data.Machine.Mealy as Mealy
@@ -180,7 +180,7 @@ resize sz g = GenT $ lmap (stateM (\s -> s { size = sz })) (unGen g)
 
 -- | A generator for characters.
 charGen :: forall f. Monad f => GenT f Char
-charGen = fromCharCode <$> chooseInt 0.0 65535.0
+charGen = fromCharCode <$> chooseInt 0 65535
 
 -- | Creates a generator that generates real numbers between the specified
 -- | inclusive range.
@@ -192,20 +192,19 @@ choose a b = (*) (max - min) >>> (+) min <$> uniform
 
 -- | Creates a generator that generates integers between the specified
 -- | inclusive range.
-chooseInt :: forall f. Monad f => Number -> Number -> GenT f Int
-chooseInt a b =
-  let min = M.ceil  (M.min a b)
-      max = M.floor (M.max a b)
-      numRes = ((+) (min - 0.5) <<< (*) (max - min + 1.0)) <$> uniform
-      rounded = M.round <$> numRes
-      intRes = fromNumber <$> rounded
-  in fromMaybe 0 <$> intRes
+chooseInt :: forall f. Monad f => Int -> Int -> GenT f Int
+chooseInt a b = clamp <$> lcgStep
+  where
+  clamp :: Int -> Int
+  clamp x = case x `mod` (b - a + one) of
+              r | r >= 0 -> a + r
+                | otherwise -> b + r + one
 
 -- | Creates a generator that chooses another generator from the specified list
 -- | at random, and then generates a value with that generator.
 oneOf :: forall f a. Monad f => GenT f a -> Array (GenT f a) -> GenT f a
 oneOf x xs = do
-  n <- chooseInt 0.0 (toNumber (A.length xs))
+  n <- chooseInt 0 (A.length xs)
   if n == 0 then x else fromMaybe x (xs A.!! (n - 1))
 
 -- | Generates elements by the specified frequencies (which will be normalized).
@@ -217,7 +216,7 @@ frequency
   -> GenT f a
 frequency x xs = do
   let xxs :: L.List (Tuple Number (GenT f a))
-      xxs   = L.Cons x xs
+      xxs = L.Cons x xs
 
       total :: Number
       total = unwrap $ fold ((Additive <<< fst) <$> xxs)
@@ -226,19 +225,19 @@ frequency x xs = do
       pick _ d L.Nil = d
       pick n d (L.Cons (Tuple k x) xs) = if n <= k then x else pick (n - k) d xs
 
-  n <- chooseInt 1.0 total
-  pick (toNumber n) (snd x) xxs
+  n <- choose 1.0 total
+  pick n (snd x) xxs
 
 -- | Creates a generator of elements ranging from 0 to the maximum size.
 arrayOf :: forall f a. Monad f => GenT f a -> GenT f (Array a)
 arrayOf g = sized \n -> do
-  k <- chooseInt 0.0 (toNumber n)
+  k <- chooseInt 0 n
   vectorOf k g
 
 -- | Creates a generator of elements ranging from 1 to the maximum size.
 arrayOf1 :: forall f a. Monad f => GenT f a -> GenT f (Tuple a (Array a))
 arrayOf1 g = sized \n -> do
-  k <- chooseInt 0.0 (toNumber n)
+  k <- chooseInt 0 n
   x <- g
   xs <- vectorOf (k - 1) g
   pure $ Tuple x xs
@@ -254,7 +253,7 @@ vectorOf n g = transGen f [] (extend n g)
 -- | Creates a generator that chooses an element from among a set of elements.
 elements :: forall f a. Monad f => a -> L.List a -> GenT f a
 elements x xs = do
-  n <- chooseInt 0.0 (toNumber (L.length xs))
+  n <- chooseInt 0 (L.length xs)
   pure if n == 0 then x else fromMaybe x (xs L.!! (n - 1))
 
 foreign import float32ToInt32 :: Number -> Int
@@ -529,7 +528,7 @@ shuffleArray = shuffle0 []
   where
   shuffle0 acc [] = pure $ acc
   shuffle0 acc xs = do
-    i <- chooseInt 0.0 (toNumber (A.length xs - 1))
+    i <- chooseInt 0 (A.length xs - 1)
     let acc' = acc <> (maybe [] A.singleton (xs A.!! i))
         xs' = fromMaybe xs $ A.deleteAt i xs
     shuffle0 acc' xs'
