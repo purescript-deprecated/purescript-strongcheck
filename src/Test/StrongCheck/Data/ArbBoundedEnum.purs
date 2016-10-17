@@ -3,7 +3,6 @@ module Test.StrongCheck.Data.ArbBoundedEnum where
 import Prelude
 
 import Data.Enum (class BoundedEnum, class Enum, Cardinality(..), fromEnum, toEnum, cardinality)
-import Data.Int as Int
 import Data.Maybe (fromJust)
 import Data.Newtype (unwrap)
 
@@ -24,7 +23,7 @@ instance arbArbBoundedEnum :: BoundedEnum a => Arbitrary (ArbBoundedEnum a) wher
   arbitrary = ArbBoundedEnum <$> f (cardinality :: Cardinality a)
     where
     f = unsafePartial \(Cardinality sz) ->
-      fromJust <<< toEnum <$> chooseInt 0.0 (Int.toNumber sz - 1.0)
+      fromJust <<< toEnum <$> chooseInt 0 (sz - 1)
 
 instance coarbArbBoundedEnum :: BoundedEnum a => Coarbitrary (ArbBoundedEnum a) where
   coarbitrary (ArbBoundedEnum e) = coarbitrary (fromEnum e)

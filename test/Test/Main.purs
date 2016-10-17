@@ -74,14 +74,14 @@ runOneToTen :: OneToTen -> Number
 runOneToTen (OneToTen n) = Int.toNumber n
 
 instance arbOneToTen :: Arbitrary OneToTen where
-  arbitrary = OneToTen <$> chooseInt 0.0 10.0
+  arbitrary = OneToTen <$> chooseInt 0 10
 
 instance arbMega :: Arbitrary Mega where
   arbitrary = do
     arrayOf'    <- arrayOf (choose 0.0 10.0)
     arrayOf1'   <- arrayOf1 (choose 0.0 10.0)
     choose'     <- choose 0.0 10.0
-    chooseInt'  <- chooseInt 0.0 10.0
+    chooseInt'  <- chooseInt 0 10
     collectAll' <- collectAll mempty (allInArray [0.0, 1.0, 2.0])
     allInArray' <- collectAll mempty (allInArray [0.0, 1.0, 2.0])
     allInRange' <- collectAll mempty (allInRange 0 10)
@@ -93,7 +93,7 @@ instance arbMega :: Arbitrary Mega where
     perms'      <- collectAll mempty $ perms ["John", "D"]
     combos'     <- collectAll mempty $ nChooseK 2 ["foo", "bar", "baz"]
     chunked'    <- collectAll mempty $ chunked 3 (pure "foo")
-    suchThat'   <- suchThat (chooseInt 0.0 4.0) (_ /= 2)
+    suchThat'   <- suchThat (chooseInt 0 4) (_ /= 2)
     pure $ Mega {
       arrayOf:    arrayOf',
       arrayOf1:   (case arrayOf1' of Tuple a as -> [a] <> as),
