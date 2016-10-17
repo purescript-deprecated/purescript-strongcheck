@@ -14,6 +14,7 @@ module Test.StrongCheck.Gen
   , chooseInt
   , chunked
   , collectAll
+  , decorateSeed
   , dropGen
   , elements
   , extend
@@ -112,6 +113,12 @@ type Gen a = GenT Trampoline a
 
 unGen :: forall f a. GenT f a -> Mealy.MealyT f GenState (GenOut a)
 unGen (GenT m) = m
+
+decorateSeed :: forall f a. Monad f => GenT f a -> GenT f (Tuple Seed a)
+decorateSeed (GenT orig) = stateful \sIn ->
+  GenT $ do
+    GenOut x <- orig
+    pure $ GenOut $ x { value = Tuple (unGenState sIn).seed x.value }
 
 lcgStep :: forall f. Monad f => GenT f Int
 lcgStep = GenT $ arr \s ->
