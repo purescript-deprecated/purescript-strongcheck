@@ -4,7 +4,6 @@ module Test.StrongCheck.Gen
   , GenState(..)
   , GenOut(..)
   , Size
-  , Seed
   , allInArray
   , allInRange
   , applyGen
@@ -15,6 +14,7 @@ module Test.StrongCheck.Gen
   , chooseInt
   , chunked
   , collectAll
+  , decorateSeed
   , dropGen
   , elements
   , extend
@@ -72,13 +72,13 @@ import Data.Array.Partial as AP
 import Data.Char (fromCharCode)
 import Data.Foldable (fold)
 import Data.Int (fromNumber, toNumber)
-import Data.Int.Bits (shl)
 import Data.Lazy (Lazy, defer)
 import Data.List as L
 import Data.Machine.Mealy as Mealy
 import Data.Maybe (fromMaybe, maybe, Maybe(..), fromJust)
 import Data.Monoid (mempty, class Monoid)
-import Data.Monoid.Additive (Additive(..), runAdditive)
+import Data.Monoid.Additive (Additive(..))
+import Data.Newtype (unwrap)
 import Data.Profunctor (arr, lmap)
 import Data.Profunctor.Strong ((&&&))
 import Data.Tuple (Tuple(..), snd, fst)
@@ -87,10 +87,11 @@ import Math as M
 
 import Partial.Unsafe (unsafePartial)
 
-type Size = Int
-type Seed  = Number
+import Test.StrongCheck.LCG (Seed, mkSeed, runSeed, lcgPerturb, lcgNext, lcgN)
 
-data GenState = GenState { seed :: Seed, size :: Size }
+type Size = Int
+
+newtype GenState = GenState { seed :: Seed, size :: Size }
 
 unGenState :: GenState -> { seed :: Seed, size :: Size }
 unGenState (GenState s) = s
@@ -101,36 +102,30 @@ stateM
   -> GenState
 stateM f = GenState <<< f <<< unGenState
 
-data GenOut a = GenOut { state :: GenState, value :: a }
+newtype GenOut a = GenOut { state :: GenState, value :: a }
 
 unGenOut :: forall a. GenOut a -> { state :: GenState, value :: a }
 unGenOut (GenOut v) = v
 
-data GenT f a = GenT (Mealy.MealyT f GenState (GenOut a))
+newtype GenT f a = GenT (Mealy.MealyT f GenState (GenOut a))
 
 type Gen a = GenT Trampoline a
 
 unGen :: forall f a. GenT f a -> Mealy.MealyT f GenState (GenOut a)
 unGen (GenT m) = m
 
-lcgM :: Seed
-lcgM = 1103515245.0
+decorateSeed :: forall f a. Monad f => GenT f a -> GenT f (Tuple Seed a)
+decorateSeed (GenT orig) = stateful \sIn ->
+  GenT $ do
+    GenOut x <- orig
+    pure $ GenOut $ x { value = Tuple (unGenState sIn).seed x.value }
 
-lcgC :: Seed
-lcgC = 12345.0
-
-lcgN :: Seed
-lcgN = toNumber $ 1 `shl` 30
-
-lcgNext :: Seed -> Seed
-lcgNext n = (lcgM * n + lcgC) M.% lcgN
-
-lcgStep :: forall f. Monad f => GenT f Seed
+lcgStep :: forall f. Monad f => GenT f Int
 lcgStep = GenT $ arr \s ->
-  GenOut { state: updateSeedState s, value: (unGenState s).seed }
+  GenOut { state: updateSeedState s, value: runSeed (unGenState s).seed }
 
-uniform :: forall f. Monad f => GenT f Seed
-uniform = (_ / toNumber (1 `shl` 30)) <$> lcgStep
+uniform :: forall f. Monad f => GenT f Number
+uniform = (\n -> toNumber n / toNumber lcgN) <$> lcgStep
 
 stepGen
   :: forall f a
@@ -225,7 +220,7 @@ frequency x xs = do
       xxs   = L.Cons x xs
 
       total :: Number
-      total = runAdditive $ fold ((Additive <<< fst) <$> xxs)
+      total = unwrap $ fold ((Additive <<< fst) <$> xxs)
 
       pick :: Number -> GenT f a -> L.List (Tuple Number (GenT f a)) -> GenT f a
       pick _ d L.Nil = d
@@ -266,10 +261,7 @@ foreign import float32ToInt32 :: Number -> Int
 
 perturbGen :: forall f a. Monad f => Number -> GenT f a -> GenT f a
 perturbGen n (GenT m) =
-  GenT $ lmap (stateM (\s -> s { seed = perturbNum n s.seed })) m
-
-perturbNum :: Number -> Seed -> Seed
-perturbNum n = (+) $ lcgNext (toNumber (float32ToInt32 n))
+  GenT $ lmap (stateM (\s -> s { seed = lcgPerturb (toNumber (float32ToInt32 n)) s.seed })) m
 
 updateSeedState :: GenState -> GenState
 updateSeedState (GenState s) = GenState { seed: lcgNext s.seed, size: s.size }
@@ -393,7 +385,7 @@ nChooseK = unsafePartial \k arr ->
        then mempty
        else
          let tl = A.drop 1 arr
-             hd = A.singleton $ AP.unsafeIndex arr 0
+             hd = A.singleton $ A.unsafeIndex arr 0
          in ((hd <> _) <$> (nChooseK (k - 1) tl)) <> nChooseK k tl
 
 -- | Same as `nChooseK` but for `List`
@@ -474,7 +466,7 @@ sample' n st g = fst <$> runGen n st g
 -- | Samples a generator, producing the specified number of values. Uses
 -- | default settings for the initial generator state.
 sample :: forall f a. Monad f => Int -> GenT f a -> f (Array a)
-sample n = sample' n (GenState { size: 10, seed: 4545645874.0 })
+sample n = sample' n (GenState { size: 10, seed: mkSeed 445645874 })
 
 -- | Shows a sample of values generated from the specified generator.
 showSample'
@@ -555,10 +547,10 @@ toLazyList (GenT m) s = ListT.wrapLazy $ defer \_ -> loop m s
 
 instance semigroupGenState :: Semigroup GenState where
   append (GenState a) (GenState b) =
-    GenState { seed: perturbNum a.seed b.seed, size: b.size }
+    GenState { seed: lcgPerturb (toNumber (runSeed a.seed)) b.seed, size: b.size }
 
 instance monoidGenState :: Monoid GenState where
-  mempty = GenState { seed: 0.0, size: 10 }
+  mempty = GenState { seed: mkSeed 85734629, size: 10 }
 
 instance semigroupGenOut :: Semigroup a => Semigroup (GenOut a) where
   append (GenOut a) (GenOut b) =

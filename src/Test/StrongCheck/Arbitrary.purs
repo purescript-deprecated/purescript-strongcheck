@@ -67,7 +67,7 @@ instance arbString :: Arbitrary String where
   arbitrary = S.fromCharArray <$> arbitrary
 
 instance coarbString :: Coarbitrary String where
-  coarbitrary s = coarbitrary $ (S.charCodeAt 0 <$> S.split "" s)
+  coarbitrary s = coarbitrary $ (S.charCodeAt 0 <$> S.split (S.Pattern "") s)
 
 instance arbChar :: Arbitrary Char where
   arbitrary = charGen

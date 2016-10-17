@@ -22,13 +22,14 @@ import Prelude
 
 import Data.Array as A
 import Data.Either (Either(..))
-import Data.Enum (class BoundedEnum, Cardinality, cardinality, runCardinality)
+import Data.Enum (class BoundedEnum, Cardinality, cardinality)
 import Data.Foldable (class Foldable, find, sum)
 import Data.Functor.Invariant (class Invariant)
 import Data.Int (fromNumber, toNumber)
 import Data.List as L
 import Data.Maybe (fromMaybe)
 import Data.Monoid (mempty)
+import Data.Newtype (unwrap)
 import Data.String as S
 import Data.Traversable (sequence)
 import Data.Tuple (Tuple(..))
@@ -190,13 +191,13 @@ instance perturbArbBoundedEnum :: (BoundedEnum a, Eq a) => Perturb (ArbBoundedEn
   perturber = Perturber { perturb: perturb', dist: dist', dims: dims' }
     where
     perturb' n e =
-      let sz = runCardinality (cardinality :: Cardinality (ArbBoundedEnum a))
+      let sz = unwrap (cardinality :: Cardinality (ArbBoundedEnum a))
       in if n < 1.0 / (2.0 * toNumber sz) then pure e else (runArbBoundedEnum <$> arbitrary)
     dist' a b =
-      let sz = runCardinality (cardinality :: Cardinality a)
+      let sz = unwrap (cardinality :: Cardinality a)
       in if runArbBoundedEnum a == runArbBoundedEnum b then 0.0 else 1.0 / (2.0 * toNumber sz)
     dims' e =
-      let sz = runCardinality (cardinality :: Cardinality a)
+      let sz = unwrap (cardinality :: Cardinality a)
       in if sz <= 0 then 0.0 else 1.0
 
 instance perturbNumber :: Perturb Number where

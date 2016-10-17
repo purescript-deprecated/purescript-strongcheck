@@ -2,9 +2,10 @@ module Test.StrongCheck.Data.ArbBoundedEnum where
 
 import Prelude
 
-import Data.Enum (class BoundedEnum, class Enum, Cardinality(..), fromEnum, toEnum, cardinality, runCardinality)
+import Data.Enum (class BoundedEnum, class Enum, Cardinality(..), fromEnum, toEnum, cardinality)
 import Data.Int as Int
 import Data.Maybe (fromJust)
+import Data.Newtype (unwrap)
 
 import Partial.Unsafe (unsafePartial)
 
@@ -40,6 +41,6 @@ instance enumHour :: BoundedEnum a => Enum (ArbBoundedEnum a) where
   pred = toEnum <<< (_ - 1) <<< fromEnum
 
 instance enumArbBoundedEnum :: BoundedEnum a => BoundedEnum (ArbBoundedEnum a) where
-  cardinality = Cardinality $ runCardinality (cardinality :: Cardinality a)
+  cardinality = Cardinality $ unwrap (cardinality :: Cardinality a)
   toEnum v = ArbBoundedEnum <$> toEnum v
   fromEnum (ArbBoundedEnum e) = fromEnum e
