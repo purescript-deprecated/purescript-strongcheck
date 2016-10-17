@@ -18,12 +18,12 @@
     "package.json"
   ],
   "dependencies": {
-    "purescript-console": "^1.0.0",
-    "purescript-enums": "^1.0.0",
-    "purescript-exceptions": "^1.0.0",
-    "purescript-free": "^1.0.0",
-    "purescript-machines": "^1.0.0",
-    "purescript-random": "^1.0.0",
-    "purescript-arrays": "^1.0.0"
+    "purescript-console": "^2.0.0",
+    "purescript-enums": "^2.0.0",
+    "purescript-exceptions": "^2.0.0",
+    "purescript-free": "^3.0.0",
+    "purescript-machines": "^2.0.0",
+    "purescript-random": "^2.0.0",
+    "purescript-arrays": "^3.0.0"
   }
 }

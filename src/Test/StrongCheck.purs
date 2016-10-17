@@ -13,6 +13,7 @@ module Test.StrongCheck
   , assertEq, (===)
   , assertNotEq, (/==)
   , annotate, (<?>)
+  , module Exports
   )
   where
 
@@ -21,7 +22,7 @@ import Prelude
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, log)
 import Control.Monad.Eff.Exception (EXCEPTION, throwException, error)
-import Control.Monad.Eff.Random (RANDOM, random)
+import Control.Monad.Eff.Random (RANDOM)
 import Control.Monad.Trampoline (runTrampoline)
 
 import Data.Array as A
@@ -34,8 +35,11 @@ import Data.Monoid (class Monoid)
 
 import Math as Math
 
-import Test.StrongCheck.Gen (Seed, Gen, GenState(..), collectAll, sample')
+import Test.StrongCheck.Gen (Gen, GenState(..), collectAll, sample')
+import Test.StrongCheck.LCG (Seed, randomSeed)
 import Test.StrongCheck.Arbitrary (class Arbitrary, arbitrary)
+
+import Test.StrongCheck.Arbitrary (class Arbitrary, arbitrary, class Coarbitrary, coarbitrary) as Exports
 
 -- | A type synonym for StrongCheck effects in Eff.
 type SC eff a = Eff (console :: CONSOLE, random :: RANDOM, err :: EXCEPTION | eff) a
@@ -101,7 +105,7 @@ smallCheckPure s prop = runTrampoline $ collectAll (defState s) (test prop)
 -- | arbitrary values.
 statCheck :: forall eff prop. Testable prop => Number -> prop -> SC eff Unit
 statCheck freq prop = do
-  seed <- random
+  seed <- randomSeed
   log <<< show $ statCheckPure seed freq prop
 
 -- | Checks that the proposition has a certain probability of being true for
@@ -147,7 +151,7 @@ defState s = (GenState {seed: s, size: 10})
 
 check :: forall eff prop f. (Testable prop, Foldable f) => (Seed -> prop -> f Result) -> prop -> SC eff Unit
 check f prop = do
-  seed <- random
+  seed <- randomSeed
   let results = f seed prop
   let successes = countSuccesses results
   log $ show successes <> "/" <> show (length $ List.fromFoldable results) <> " test(s) passed."
