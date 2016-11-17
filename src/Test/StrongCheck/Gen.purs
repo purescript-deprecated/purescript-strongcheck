@@ -136,7 +136,7 @@ stepGen
 stepGen st (GenT m) = h <$> Mealy.stepMealy st m
   where
   h Mealy.Halt = Nothing
-  h (Mealy.Emit a m) = Just $ flip Tuple (GenT m) <$> a
+  h (Mealy.Emit a m') = Just $ flip Tuple (GenT m') <$> a
 
 evalGen :: forall f a. Monad f => GenT f a -> GenState -> f (Maybe a)
 evalGen g st = h <$> stepGen st g
@@ -223,7 +223,7 @@ frequency x xs = do
 
       pick :: Number -> GenT f a -> L.List (Tuple Number (GenT f a)) -> GenT f a
       pick _ d L.Nil = d
-      pick n d (L.Cons (Tuple k x) xs) = if n <= k then x else pick (n - k) d xs
+      pick n d (L.Cons (Tuple k x') xs') = if n <= k then x' else pick (n - k) d xs'
 
   n <- choose 1.0 total
   pick n (snd x) xxs
@@ -291,13 +291,12 @@ dropGen n = liftMealy $ Mealy.drop n
 extend :: forall f a. Monad f => Int -> GenT f a -> GenT f a
 extend n (GenT m) = (GenT $ loop 0 m) <> (GenT m)
   where
-  m0 = m
-  loop i m = Mealy.mealy \st ->
+  loop i m' = Mealy.mealy \st ->
     let
-      f (Mealy.Emit s m) = pure $ Mealy.Emit s (loop (i + 1) m)
+      f (Mealy.Emit s m'') = pure $ Mealy.Emit s (loop (i + 1) m'')
       f Mealy.Halt =
-        if i >= n then pure Mealy.Halt else Mealy.stepMealy st (loop i m0)
-    in Mealy.stepMealy st m >>= f
+        if i >= n then pure Mealy.Halt else Mealy.stepMealy st (loop i m)
+    in Mealy.stepMealy st m' >>= f
 
 -- | Fairly interleaves two generators.
 interleave :: forall f a. Monad f => GenT f a -> GenT f a -> GenT f a
@@ -320,11 +319,11 @@ foldGen'
   -> GenT f a -> f (Tuple b (GenT f a))
 foldGen' f b s (GenT m) = loop s m b
   where
-  loop st m b = Mealy.stepMealy st m >>= g
+  loop st m' b' = Mealy.stepMealy st m' >>= g
     where
-    g Mealy.Halt = pure $ Tuple b (GenT Mealy.halt)
-    g (Mealy.Emit (GenOut { value: a, state: st }) m) =
-      let b' = f b a in maybe (pure $ Tuple b (GenT m)) (loop st m) b'
+    g Mealy.Halt = pure $ Tuple b' (GenT Mealy.halt)
+    g (Mealy.Emit (GenOut { value: a, state: st' }) m'') =
+      let b'' = f b' a in maybe (pure $ Tuple b' (GenT m'')) (loop st' m'') b''
 
 -- | Folds over a generator to produce a value. Either the generator or the
 -- | user-defined function may halt the fold.
@@ -350,15 +349,15 @@ transGen
   -> GenT f c
 transGen f b (GenT m) = GenT $ loop m b
   where
-  loop m b = Mealy.mealy \st -> Mealy.stepMealy st m >>= g
+  loop m' b' = Mealy.mealy \st -> Mealy.stepMealy st m' >>= g
     where
     g Mealy.Halt = pure Mealy.Halt
-    g (Mealy.Emit (GenOut { value: a, state: st }) m) =
-      case f b a of
-        Tuple b Nothing  -> Mealy.stepMealy st (loop m b)
-        Tuple b (Just c) ->
+    g (Mealy.Emit (GenOut { value: a, state: st }) m'') =
+      case f b' a of
+        Tuple b'' Nothing  -> Mealy.stepMealy st (loop m'' b'')
+        Tuple b'' (Just c) ->
           let c' = GenOut { value: c, state: st }
-          in  pure $ Mealy.Emit c' (loop m b)
+          in  pure $ Mealy.Emit c' (loop m'' b'')
 
 -- | A deterministic generator that produces all possible permutations of
 -- | the specified array.
@@ -434,7 +433,7 @@ allInArray a = GenT $ go 0
   go i = Mealy.pureMealy \s ->
     maybe
       Mealy.Halt
-      (\a -> Mealy.Emit (GenOut { state: s, value: a }) (go (i + 1)))
+      (\a' -> Mealy.Emit (GenOut { state: s, value: a' }) (go (i + 1)))
       (a A.!! i)
 
 -- | Drains a finite generator of all values. Or blows up if you called it on
@@ -455,8 +454,8 @@ applyGen
 applyGen s (GenT m) = f <$> Mealy.stepMealy s m
   where
   f Mealy.Halt = Nothing
-  f (Mealy.Emit (GenOut { state: s, value: a }) m) =
-    Just $ GenOut { state: s, value: Tuple a (GenT m)}
+  f (Mealy.Emit (GenOut { state, value: a }) m') =
+    Just $ GenOut { state, value: Tuple a (GenT m')}
 
 -- | Samples a generator, producing the specified number of values.
 sample' :: forall f a. Monad f => Int -> GenState -> GenT f a -> f (Array a)
@@ -538,11 +537,11 @@ shuffleArray = shuffle0 []
 toLazyList :: forall a. Gen a -> GenState -> ListT.ListT Lazy a
 toLazyList (GenT m) s = ListT.wrapLazy $ defer \_ -> loop m s
   where
-  loop m s =
-    case runTrampoline (Mealy.stepMealy s m) of
+  loop m' s' =
+    case runTrampoline (Mealy.stepMealy s' m') of
       Mealy.Halt -> ListT.nil
-      Mealy.Emit (GenOut { value: a, state: s }) m ->
-        ListT.prepend' a (defer \_ -> loop m s)
+      Mealy.Emit (GenOut { value, state }) m'' ->
+        ListT.prepend' value (defer \_ -> loop m'' state)
 
 instance semigroupGenState :: Semigroup GenState where
   append (GenState a) (GenState b) =
@@ -570,10 +569,7 @@ instance functorGenT :: Monad f => Functor (GenT f) where
   map f (GenT m) = GenT $ map f <$> m
 
 instance applyGenT :: Monad f => Apply (GenT f) where
-  apply f x = GenT do
-    f <- unGen f
-    x <- unGen $ updateSeedGen x
-    pure $ f <*> x
+  apply f x = GenT $ apply <$> unGen f <*> unGen (updateSeedGen x)
 
 instance applicativeGenT :: Monad f => Applicative (GenT f) where
   pure t = GenT $ arr (\s -> GenOut { state: updateSeedState s, value: t })

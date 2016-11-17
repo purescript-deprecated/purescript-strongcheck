@@ -172,8 +172,8 @@ throwOnFirstFailure n fr = throwOnFirstFailure' n (List.fromFoldable fr)
   where
   throwOnFirstFailure' :: Int -> List (Tuple Seed Result) -> SC eff Unit
   throwOnFirstFailure' _ Nil = pure unit
-  throwOnFirstFailure' n (Cons (Tuple seed (Failed msg)) _) = throwException $ error $ "Test " <> show n <> " (seed " <> show (runSeed seed) <> ") failed: \n" <> msg
-  throwOnFirstFailure' n (Cons _ rest) = throwOnFirstFailure (n + 1) rest
+  throwOnFirstFailure' n' (Cons (Tuple seed (Failed msg)) _) = throwException $ error $ "Test " <> show n' <> " (seed " <> show (runSeed seed) <> ") failed: \n" <> msg
+  throwOnFirstFailure' n' (Cons _ rest) = throwOnFirstFailure (n' + 1) rest
 
 countSuccesses :: forall f. Foldable f => f (Tuple Seed Result) -> Int
 countSuccesses fa = countSuccesses' 0 (List.fromFoldable fa)

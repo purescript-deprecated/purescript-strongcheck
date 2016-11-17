@@ -98,12 +98,12 @@ searchIn' :: forall a. Perturb a => Attempts -> Int -> (a -> Boolean) -> a -> Ge
 searchIn' (Attempts k) n f a = search0 k 1.0
   where
   search0 :: Int -> Number -> Gen a
-  search0 k d =
-    if k <= 0
+  search0 k' d =
+    if k' <= 0
     then mempty
     else do
       a' <- find f <$> (takeGen 1 $ chunked n (perturb d a))
-      fromMaybe mempty (pure <$> a') <> search0 (k - 1) (d / 2.0)
+      fromMaybe mempty (pure <$> a') <> search0 (k' - 1) (d / 2.0)
 
 
 -- | The same as search', but uses defaults for attempt count and sample size.
@@ -151,7 +151,7 @@ bounded a b =
     perturb' d v = do
       dx <- arbitrary
       pure <<< clamp $ dx * length * d + v
-    dist' a b = Math.abs (a - b)
+    dist' x y = Math.abs (x - y)
     dims' = const 1.0
   in Perturber { perturb: perturb', dist: dist', dims: dims' }
 
