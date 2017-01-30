@@ -115,10 +115,7 @@ unGen :: forall f a. GenT f a -> Mealy.MealyT f GenState (GenOut a)
 unGen (GenT m) = m
 
 decorateSeed :: forall f a. Monad f => GenT f a -> GenT f (Tuple Seed a)
-decorateSeed (GenT orig) = stateful \sIn ->
-  GenT $ do
-    GenOut x <- orig
-    pure $ GenOut $ x { value = Tuple (unGenState sIn).seed x.value }
+decorateSeed gen = stateful \sIn -> Tuple (unGenState sIn).seed <$> gen
 
 lcgStep :: forall f. Monad f => GenT f Int
 lcgStep = GenT $ arr \s ->
