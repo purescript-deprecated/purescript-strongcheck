@@ -273,7 +273,7 @@ k0 = Math.log(maxNumber + 1.0)
 square :: Number -> Number
 square = flip Math.pow 2.0
 
-toDist :: forall f. (Foldable f, Functor f) => f Number -> Number
+toDist :: forall f. Foldable f => Functor f => f Number -> Number
 toDist xs = Math.sqrt (sum $ square <$> xs)
 
 delta :: Number -> Number -> Number

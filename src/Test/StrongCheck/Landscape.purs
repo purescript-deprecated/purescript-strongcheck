@@ -109,7 +109,7 @@ sampleHere :: forall a. Perturb a => Int -> Landscape a -> Array a
 sampleHere n = (<$>) (unDriverState >>> \v -> v.value) <<< sampleHere' n
 
 -- | Moves to a location in a landscape that was previously sampled.
-moveTo :: forall a. (Eq a, Perturb a) => a -> Landscape a -> Maybe (Landscape a)
+moveTo :: forall a. Eq a => Perturb a => a -> Landscape a -> Maybe (Landscape a)
 moveTo a v = Landscape <$> moveIt a v
   where moveIt a' = force <<< L.head <<< L.filter (\v' -> (unDriverState (head v')).value == a') <<< tail <<< unLandscape
 

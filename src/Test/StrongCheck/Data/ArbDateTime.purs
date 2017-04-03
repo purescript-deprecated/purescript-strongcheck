@@ -31,9 +31,9 @@ instance arbitraryArbTime ∷ Arbitrary ArbTime where
 
 instance coarbitraryArbTime ∷ Coarbitrary ArbTime where
   coarbitrary (ArbTime t) = do
-    coarbitrary $ fromEnum (DT.hour t)
-    coarbitrary $ fromEnum (DT.minute t)
-    coarbitrary $ fromEnum (DT.second t)
+    _ <- coarbitrary $ fromEnum (DT.hour t)
+    _ <- coarbitrary $ fromEnum (DT.minute t)
+    _ <- coarbitrary $ fromEnum (DT.second t)
     coarbitrary $ fromEnum (DT.millisecond t)
 
 newtype ArbDate = ArbDate DT.Date
@@ -55,8 +55,8 @@ instance arbitraryArbDate ∷ Arbitrary ArbDate where
 
 instance coarbitraryArbDate ∷ Coarbitrary ArbDate where
   coarbitrary (ArbDate dt) = do
-    coarbitrary $ fromEnum (DT.year dt)
-    coarbitrary $ fromEnum (DT.month dt)
+    _ <- coarbitrary $ fromEnum (DT.year dt)
+    _ <- coarbitrary $ fromEnum (DT.month dt)
     coarbitrary $ fromEnum (DT.day dt)
 
 newtype ArbDateTime = ArbDateTime DT.DateTime
@@ -74,5 +74,5 @@ instance arbitraryArbDateTime ∷ Arbitrary ArbDateTime where
 
 instance coarbitraryArbDateTime ∷ Coarbitrary ArbDateTime where
   coarbitrary (ArbDateTime dt) = do
-    coarbitrary $ ArbDate (DT.date dt)
+    _ <- coarbitrary $ ArbDate (DT.date dt)
     coarbitrary $ ArbTime (DT.time dt)

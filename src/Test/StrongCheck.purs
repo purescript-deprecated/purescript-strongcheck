@@ -45,7 +45,7 @@ import Test.StrongCheck.Arbitrary (class Arbitrary, arbitrary, class Coarbitrary
 import Test.StrongCheck.LCG (Seed, mkSeed) as Exports
 
 -- | A type synonym for StrongCheck effects in Eff.
-type SC eff a = Eff (console :: CONSOLE, random :: RANDOM, err :: EXCEPTION | eff) a
+type SC eff a = Eff (console :: CONSOLE, random :: RANDOM, exception :: EXCEPTION | eff) a
 
 -- | The result of a property test.
 data Result = Success | Failed String
@@ -160,7 +160,7 @@ statCheckPure s freq prop = try 100
 defState :: Seed -> GenState
 defState s = (GenState {seed: s, size: 10})
 
-check :: forall eff prop f. (Testable prop, Foldable f) => (prop -> f (Tuple Seed Result)) -> prop -> SC eff Unit
+check :: forall eff prop f. Testable prop => Foldable f => (prop -> f (Tuple Seed Result)) -> prop -> SC eff Unit
 check f prop = do
   let results = f prop
   let successes = countSuccesses results
@@ -196,7 +196,7 @@ infix 1 annotate as <?>
 
 -- | Asserts that two values are equal, resulting in a `Failure` if they are
 -- | not, with a message showing the values involved.
-assertEq :: forall a. (Eq a, Show a) => a -> a -> Result
+assertEq :: forall a. Eq a => Show a => a -> a -> Result
 assertEq a b = a == b <?> msg
   where
   msg = show a <> " /= " <> show b
@@ -205,7 +205,7 @@ infix 2 assertEq as ===
 
 -- | Asserts that two values are not equal, resulting in a `Failure` if they
 -- | are, with a message showing the values involved.
-assertNotEq :: forall a. (Eq a, Show a) => a -> a -> Result
+assertNotEq :: forall a. Eq a => Show a => a -> a -> Result
 assertNotEq a b = a /= b <?> msg
   where
   msg = show a <> " == " <> show b
