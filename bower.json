@@ -25,6 +25,7 @@
     "purescript-machines": "^4.0.0",
     "purescript-random": "^3.0.0",
     "purescript-arrays": "^4.0.1",
-    "purescript-datetime": "^3.0.0"
+    "purescript-datetime": "^3.0.0",
+    "purescript-gen": "^1.0.0"
   }
 }

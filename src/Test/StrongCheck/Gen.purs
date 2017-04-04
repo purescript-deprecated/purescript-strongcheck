@@ -63,6 +63,7 @@ import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (logShow, CONSOLE)
 import Control.Monad.List.Trans as ListT
 import Control.Monad.Trampoline (runTrampoline, Trampoline)
+import Control.Monad.Gen as CMG
 import Control.MonadPlus (class MonadPlus)
 import Control.MonadZero (class MonadZero)
 import Control.Plus (class Plus)
@@ -598,3 +599,10 @@ instance monadPlusGenT :: Monad f => MonadPlus (GenT f)
 
 instance lazyGenT :: Monad f => CL.Lazy (GenT f a) where
   defer f = GenT $ CL.defer (unGen <<< f)
+
+instance monadGenGenT :: Monad f => CMG.MonadGen (GenT f) where
+  chooseInt = chooseInt
+  chooseFloat = choose
+  chooseBool = (_ < 0.5) <$> uniform
+  resize f g = stateful \(GenState state) -> resize (f state.size) g
+  sized = sized
