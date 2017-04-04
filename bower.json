@@ -18,13 +18,13 @@
     "package.json"
   ],
   "dependencies": {
-    "purescript-console": "^2.0.0",
-    "purescript-enums": "^2.0.0",
-    "purescript-exceptions": "^2.0.0",
-    "purescript-free": "^3.0.0",
-    "purescript-machines": "^2.0.0",
-    "purescript-random": "^2.0.0",
-    "purescript-arrays": "^3.0.0",
-    "purescript-datetime": "^2.1.1"
+    "purescript-console": "^3.0.0",
+    "purescript-enums": "^3.0.0",
+    "purescript-exceptions": "^3.0.0",
+    "purescript-free": "^4.0.0",
+    "purescript-machines": "^4.0.0",
+    "purescript-random": "^3.0.0",
+    "purescript-arrays": "^4.0.1",
+    "purescript-datetime": "^3.0.0"
   }
 }
