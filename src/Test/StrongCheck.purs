@@ -24,11 +24,13 @@ import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, log)
 import Control.Monad.Eff.Exception (EXCEPTION, throwException, error)
 import Control.Monad.Eff.Random (RANDOM)
+import Control.Monad.Free (Free)
 import Control.Monad.Trampoline (runTrampoline)
 
 import Data.Array as A
 import Data.Foldable (class Foldable)
 import Data.Int as Int
+import Data.Lazy (Lazy)
 import Data.List (List(..), length)
 import Data.List as List
 import Data.Maybe (maybe)
@@ -37,9 +39,9 @@ import Data.Tuple (Tuple(..))
 
 import Math as Math
 
-import Test.StrongCheck.Gen (Gen, GenState(..), collectAll, sample', decorateSeed)
-import Test.StrongCheck.LCG (Seed, randomSeed, runSeed)
 import Test.StrongCheck.Arbitrary (class Arbitrary, arbitrary)
+import Test.StrongCheck.Gen (GenT, Gen, GenState(..), collectAll, sample', decorateSeed)
+import Test.StrongCheck.LCG (Seed, randomSeed, runSeed)
 
 import Test.StrongCheck.Arbitrary (class Arbitrary, arbitrary, class Coarbitrary, coarbitrary) as Exports
 import Test.StrongCheck.LCG (Seed, mkSeed) as Exports
@@ -79,6 +81,9 @@ instance testableResult :: Testable Result where
 
 instance testableFunction :: (Arbitrary t, Testable prop) => Testable (t -> prop) where
   test f = test <<< f =<< arbitrary
+
+instance testableGen :: Testable prop => Testable (GenT (Free Lazy) prop) where
+  test = flip bind test
 
 -- | Checks the proposition for 100 random values.
 quickCheck :: forall eff prop. Testable prop => prop -> SC eff Unit
