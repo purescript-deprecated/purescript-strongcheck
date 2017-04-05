@@ -2,6 +2,9 @@ module Test.StrongCheck.Arbitrary where
 
 import Prelude
 
+import Control.Monad.Gen as CMG
+import Control.Monad.Gen.Common as CMGC
+
 import Data.Array as A
 import Data.Array.Partial as AP
 import Data.Char (toCharCode)
@@ -41,9 +44,7 @@ class Coarbitrary t where
   coarbitrary :: forall r. t -> Gen r -> Gen r
 
 instance arbBoolean :: Arbitrary Boolean where
-  arbitrary = do
-    n <- uniform
-    pure (n < 0.5)
+  arbitrary = CMG.chooseBool
 
 instance coarbBoolean :: Coarbitrary Boolean where
   coarbitrary true  = perturbGen 1.0
@@ -114,24 +115,20 @@ instance coarbFunction :: (Arbitrary a, Coarbitrary b) => Coarbitrary (a -> b) w
     coarbitrary (f xs) gen
 
 instance arbTuple :: (Arbitrary a, Arbitrary b) => Arbitrary (Tuple a b) where
-  arbitrary = Tuple <$> arbitrary <*> arbitrary
+  arbitrary = CMGC.genTuple arbitrary arbitrary
 
 instance coarbTuple :: (Coarbitrary a, Coarbitrary b) => Coarbitrary (Tuple a b) where
   coarbitrary (Tuple a b) = coarbitrary a >>> coarbitrary b
 
 instance arbMaybe :: Arbitrary a => Arbitrary (Maybe a) where
-  arbitrary = do
-    b <- arbitrary
-    if b then pure Nothing else Just <$> arbitrary
+  arbitrary = CMGC.genMaybe arbitrary
 
 instance coarbMaybe :: Coarbitrary a => Coarbitrary (Maybe a) where
   coarbitrary Nothing = perturbGen 1.0
   coarbitrary (Just a) = coarbitrary a
 
 instance arbEither :: (Arbitrary a, Arbitrary b) => Arbitrary (Either a b) where
-  arbitrary = do
-    b <- arbitrary
-    if b then Left <$> arbitrary else Right <$> arbitrary
+  arbitrary = CMGC.genEither arbitrary arbitrary
 
 instance coarbEither :: (Coarbitrary a, Coarbitrary b) => Coarbitrary (Either a b) where
   coarbitrary (Left a)  = coarbitrary a
@@ -144,7 +141,7 @@ instance coarbList :: Coarbitrary a => Coarbitrary (List a) where
   coarbitrary = coarbitrary <<< A.fromFoldable
 
 instance arbitraryIdentity :: Arbitrary a => Arbitrary (Identity a) where
-  arbitrary = Identity <$> arbitrary
+  arbitrary = CMGC.genIdentity arbitrary
 
 instance coarbIdentity :: Coarbitrary a => Coarbitrary (Identity a) where
   coarbitrary (Identity a) = coarbitrary a
