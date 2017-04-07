@@ -64,6 +64,7 @@ import Control.Monad.Eff.Console (logShow, CONSOLE)
 import Control.Monad.List.Trans as ListT
 import Control.Monad.Trampoline (runTrampoline, Trampoline)
 import Control.Monad.Gen as CMG
+import Control.Monad.Rec.Class (class MonadRec, Step(..), tailRecM)
 import Control.MonadPlus (class MonadPlus)
 import Control.MonadZero (class MonadZero)
 import Control.Plus (class Plus)
@@ -596,6 +597,11 @@ instance alternativeGenT :: Monad f => Alternative (GenT f)
 instance monadZeroGenT :: Monad f => MonadZero (GenT f)
 
 instance monadPlusGenT :: Monad f => MonadPlus (GenT f)
+
+instance monadRecGenT :: MonadRec f => MonadRec (GenT f) where
+  tailRecM k a = k a >>= case _ of
+    Loop b -> tailRecM k b
+    Done r -> pure r
 
 instance lazyGenT :: Monad f => CL.Lazy (GenT f a) where
   defer f = GenT $ CL.defer (unGen <<< f)
