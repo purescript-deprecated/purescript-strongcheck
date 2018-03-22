@@ -22,12 +22,12 @@ import Prelude
 
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, log)
-import Control.Monad.Eff.Exception (EXCEPTION, throwException, error)
+import Control.Monad.Eff.Exception (EXCEPTION, error, throwException, try)
 import Control.Monad.Eff.Random (RANDOM)
 import Control.Monad.Free (Free)
 import Control.Monad.Trampoline (runTrampoline)
-
 import Data.Array as A
+import Data.Either (Either(..))
 import Data.Foldable (class Foldable)
 import Data.Int as Int
 import Data.Lazy (Lazy)
@@ -36,15 +36,12 @@ import Data.List as List
 import Data.Maybe (maybe)
 import Data.Monoid (class Monoid)
 import Data.Tuple (Tuple(..))
-
 import Math as Math
-
 import Test.StrongCheck.Arbitrary (class Arbitrary, arbitrary)
-import Test.StrongCheck.Gen (GenT, Gen, GenState(..), collectAll, sample', decorateSeed)
-import Test.StrongCheck.LCG (Seed, randomSeed, runSeed)
-
 import Test.StrongCheck.Arbitrary (class Arbitrary, arbitrary, class Coarbitrary, coarbitrary) as Exports
+import Test.StrongCheck.Gen (GenT, Gen, GenState(..), collectAll, sample', decorateSeed)
 import Test.StrongCheck.LCG (Seed, mkSeed) as Exports
+import Test.StrongCheck.LCG (Seed, randomSeed, runSeed)
 
 -- | A type synonym for StrongCheck effects in Eff.
 type SC eff a = Eff (console :: CONSOLE, random :: RANDOM, exception :: EXCEPTION | eff) a
@@ -97,7 +94,7 @@ quickCheck' n prop = do
 
 -- | Checks the proposition for the specified number of random values, starting with a specific seed.
 quickCheckWithSeed :: forall eff prop. Testable prop => Seed -> Int -> prop -> SC eff Unit
-quickCheckWithSeed seed n prop = check (quickCheckPure n seed) prop
+quickCheckWithSeed seed n prop = check seed (quickCheckPure n) prop
 
 -- | Checks the proposition for the specified number of random values in a pure
 -- | setting, returning an array of results.
@@ -109,7 +106,7 @@ quickCheckPure n s prop = runTrampoline $ sample' n (defState s) (decorateSeed (
 smallCheck :: forall eff prop. Testable prop => prop -> SC eff Unit
 smallCheck prop = do
   seed <- randomSeed
-  check (smallCheckPure seed) prop
+  check seed smallCheckPure prop
 
 -- | Exhaustively checks the proposition for all possible values in a pure
 -- | setting, returning an array of results. Assumes the generator is a finite
@@ -165,12 +162,16 @@ statCheckPure s freq prop = try 100
 defState :: Seed -> GenState
 defState s = (GenState {seed: s, size: 10})
 
-check :: forall eff prop f. Testable prop => Foldable f => (prop -> f (Tuple Seed Result)) -> prop -> SC eff Unit
-check f prop = do
-  let results = f prop
-  let successes = countSuccesses results
-  log $ show successes <> "/" <> show (length $ List.fromFoldable results) <> " test(s) passed."
-  throwOnFirstFailure 1 results
+check :: forall eff prop f. Testable prop => Foldable f => Seed -> (Seed -> prop -> f (Tuple Seed Result)) -> prop -> SC eff Unit
+check seed f prop = do
+  resultsOrErr <- try $ pure unit <#> \_ -> f seed prop
+  case resultsOrErr of
+    Left err -> 
+      throwException $ error $ "Got unexpected runtime error (seed " <> show (runSeed seed) <> "): \n" <> show err
+    Right results -> do
+      let successes = countSuccesses results
+      log $ show successes <> "/" <> show (length $ List.fromFoldable results) <> " test(s) passed."
+      throwOnFirstFailure 1 results
 
 throwOnFirstFailure :: forall eff f. Foldable f => Int -> f (Tuple Seed Result) -> SC eff Unit
 throwOnFirstFailure n fr = throwOnFirstFailure' n (List.fromFoldable fr)

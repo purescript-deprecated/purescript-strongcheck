@@ -3,21 +3,22 @@ module Test.Main where
 import Prelude
 
 import Control.Monad.Eff.Console (log)
+import Control.Monad.Eff.Exception (message, try)
 import Control.Monad.Trampoline (runTrampoline)
-
 import Data.Array as Array
+import Data.Either (Either(..))
 import Data.Foldable (fold, all, elem)
 import Data.Int as Int
 import Data.List as List
-import Data.Maybe (Maybe(..), maybe, isJust)
+import Data.Maybe (Maybe(..), isJust, maybe)
 import Data.Monoid (mempty)
+import Data.String (Pattern(..), indexOf)
 import Data.Tuple (Tuple(..))
-
 import Math as Math
-
-import Test.StrongCheck (SC, Result, assert, statCheck, smallCheck, quickCheck, (<?>))
+import Test.StrongCheck (Result, SC, assert, mkSeed, quickCheck, quickCheckWithSeed, smallCheck, statCheck, (<?>))
 import Test.StrongCheck.Arbitrary (class Arbitrary, arbitrary)
 import Test.StrongCheck.Gen (sample, allInArray, foldGen, chooseInt, suchThat, chunked, collectAll, nChooseK, perms, infinite, takeGen, extend, elements, arrayOf, dropGen, allInRange, choose, arrayOf1)
+import Test.StrongCheck.LCG (lcgM)
 import Test.StrongCheck.Landscape (Landscape, moveTo, sampleHere, somewhere)
 import Test.StrongCheck.Perturb (searchIn)
 
@@ -143,6 +144,17 @@ main = do
   log "smallCheck"
   smallCheck $ runDetABC >>> (flip elem ["A", "B", "C"])
 
+  log "seed is recoverable after unexpected runtime error"
+  errOrUnit <- try (quickCheckWithSeed (mkSeed lcgM ) 100 $ runDetABC >>> throwIfInputIsA)
+  case errOrUnit of
+    Right _ ->
+      log "should have gotten an error" *> assert false
+    Left err ->
+      if indexOf (Pattern $ "Got unexpected runtime error (seed " <> show lcgM) (message err) == Just 0 
+        then log "error was caught successfully."
+        else log ("couldn't caught the error: " <> show err) *> assert false
+
+
   log "Fair distribution of booleans"
   statCheck (1.0/2.0) $ (==) true
 
@@ -166,3 +178,5 @@ main = do
                 x <- Array.head $ Array.drop 50 (sampleHere 100 l)
                 l' <- moveTo x l
                 pure true) == Just true
+
+foreign import throwIfInputIsA :: String -> Boolean
