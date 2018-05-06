@@ -28,7 +28,6 @@ import Data.Functor.Invariant (class Invariant)
 import Data.Int (fromNumber, toNumber)
 import Data.List as L
 import Data.Maybe (fromMaybe)
-import Data.Monoid (mempty)
 import Data.Newtype (unwrap)
 import Data.String as S
 import Data.Traversable (sequence)

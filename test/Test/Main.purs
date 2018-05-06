@@ -2,20 +2,17 @@ module Test.Main where
 
 import Prelude
 
-import Control.Monad.Eff.Console (log)
 import Control.Monad.Trampoline (runTrampoline)
-
 import Data.Array as Array
 import Data.Foldable (fold, all, elem)
 import Data.Int as Int
 import Data.List as List
 import Data.Maybe (Maybe(..), maybe, isJust)
-import Data.Monoid (mempty)
 import Data.Tuple (Tuple(..))
-
+import Effect (Effect)
+import Effect.Console (log)
 import Math as Math
-
-import Test.StrongCheck (SC, Result, assert, statCheck, smallCheck, quickCheck, (<?>))
+import Test.StrongCheck (Result, assert, statCheck, smallCheck, quickCheck, (<?>))
 import Test.StrongCheck.Arbitrary (class Arbitrary, arbitrary)
 import Test.StrongCheck.Gen (sample, allInArray, foldGen, chooseInt, suchThat, chunked, collectAll, nChooseK, perms, infinite, takeGen, extend, elements, arrayOf, dropGen, allInRange, choose, arrayOf1)
 import Test.StrongCheck.Landscape (Landscape, moveTo, sampleHere, somewhere)
@@ -132,7 +129,7 @@ verify_gen (Mega m) = fold [
   m.chunked == [["foo", "foo", "foo"]] <?> "chunked: " <> show m.chunked,
   m.suchThat /= 2 <?> "suchThat: " <> show m.suchThat]
 
-main :: SC () Unit
+main :: Effect Unit
 main = do
   log "Gen combinators"
   quickCheck $ verify_gen

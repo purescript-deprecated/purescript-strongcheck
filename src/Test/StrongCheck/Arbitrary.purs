@@ -101,7 +101,7 @@ instance arbArray :: Arbitrary a => Arbitrary (Array a) where
 instance coarbArray :: Coarbitrary a => Coarbitrary (Array a) where
   coarbitrary = unsafePartial \arr ->
     if A.length arr == 0
-    then id
+    then identity
     else let x = AP.head arr
              xs = AP.tail arr
          in coarbitrary xs <<< coarbitrary x
