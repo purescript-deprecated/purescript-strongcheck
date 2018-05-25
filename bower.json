@@ -44,6 +44,6 @@
     "purescript-strings": "^4.0.0",
     "purescript-tailrec": "^4.0.0",
     "purescript-transformers": "^4.0.0",
-    "purescript-tuples": "^5.0.0",
+    "purescript-tuples": "^5.0.0"
   }
 }
