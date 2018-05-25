@@ -4,7 +4,6 @@ import Prelude
 
 import Control.Monad.Gen as CMG
 import Control.Monad.Gen.Common as CMGC
-
 import Data.Array as A
 import Data.Array.Partial as AP
 import Data.Char (toCharCode)
@@ -15,12 +14,11 @@ import Data.Lazy (Lazy, defer, force)
 import Data.List (List)
 import Data.Maybe (Maybe(..), fromJust)
 import Data.String as S
+import Data.String.CodeUnits as SCU
+import Data.String.Gen (genUnicodeString)
 import Data.Tuple (Tuple(..))
-
 import Math as Math
-
 import Partial.Unsafe (unsafePartial)
-
 import Test.StrongCheck.Gen (Gen, perturbGen, repeatable, oneOf, charGen, uniform)
 
 -- | The `Arbitrary` class represents those types whose values can be
@@ -65,10 +63,10 @@ instance coarbInt :: Coarbitrary Int where
   coarbitrary = perturbGen <<< toNumber
 
 instance arbString :: Arbitrary String where
-  arbitrary = S.fromCharArray <$> arbitrary
+  arbitrary = genUnicodeString
 
 instance coarbString :: Coarbitrary String where
-  coarbitrary s = coarbitrary $ (S.charCodeAt 0 <$> S.split (S.Pattern "") s)
+  coarbitrary s = coarbitrary $ (SCU.charAt 0 <$> S.split (S.Pattern "") s)
 
 instance arbChar :: Arbitrary Char where
   arbitrary = charGen
