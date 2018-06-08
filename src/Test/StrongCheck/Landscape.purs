@@ -27,7 +27,6 @@ import Prelude
 import Data.Lazy (Lazy, force, defer)
 import Data.Maybe (Maybe, maybe)
 import Data.Tuple (fst, snd)
-import Data.Monoid (mempty)
 
 import Control.Comonad.Cofree (head, tail, Cofree, mkCofree)
 import Control.Monad.Trampoline (runTrampoline)

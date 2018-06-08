@@ -9,12 +9,17 @@ import Data.Array as A
 import Data.Array.Partial as AP
 import Data.Char (toCharCode)
 import Data.Either (Either(..))
+import Data.Enum (toEnum, fromEnum)
 import Data.Identity (Identity(..))
 import Data.Int (fromNumber, toNumber)
 import Data.Lazy (Lazy, defer, force)
 import Data.List (List)
 import Data.Maybe (Maybe(..), fromJust)
-import Data.String as S
+import Data.String (codePointAt) as S
+import Data.String.CodePoints (CodePoint)
+import Data.String.CodeUnits (fromCharArray) as S
+import Data.String.Common (split) as S
+import Data.String.Pattern (Pattern(Pattern)) as S
 import Data.Tuple (Tuple(..))
 
 import Math as Math
@@ -68,7 +73,7 @@ instance arbString :: Arbitrary String where
   arbitrary = S.fromCharArray <$> arbitrary
 
 instance coarbString :: Coarbitrary String where
-  coarbitrary s = coarbitrary $ (S.charCodeAt 0 <$> S.split (S.Pattern "") s)
+  coarbitrary s = coarbitrary $ (S.codePointAt 0 <$> S.split (S.Pattern "") s)
 
 instance arbChar :: Arbitrary Char where
   arbitrary = charGen
@@ -101,7 +106,7 @@ instance arbArray :: Arbitrary a => Arbitrary (Array a) where
 instance coarbArray :: Coarbitrary a => Coarbitrary (Array a) where
   coarbitrary = unsafePartial \arr ->
     if A.length arr == 0
-    then id
+    then identity
     else let x = AP.head arr
              xs = AP.tail arr
          in coarbitrary xs <<< coarbitrary x
@@ -151,3 +156,14 @@ instance arbitraryLazy :: Arbitrary a => Arbitrary (Lazy a) where
 
 instance coarbLazy :: Coarbitrary a => Coarbitrary (Lazy a) where
   coarbitrary a = coarbitrary (force a)
+
+instance arbitraryCodePoint :: Arbitrary CodePoint where
+  arbitrary = unsafePartial do
+    n <- uniform
+    pure <<< fromJust <<< (toEnum <=< fromNumber) <<< Math.floor $ toNumber ((topCP - botCP) + botCP) * n
+    where
+    topCP = fromEnum (top :: CodePoint)
+    botCP = fromEnum (bottom :: CodePoint)
+
+instance coarbitraryCodePoint :: Coarbitrary CodePoint where
+  coarbitrary = perturbGen <<< toNumber <<< fromEnum
