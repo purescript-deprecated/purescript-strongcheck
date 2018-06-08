@@ -12,8 +12,8 @@ module Test.StrongCheck.LCG
 
 import Prelude
 
-import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.Random (RANDOM, randomInt)
+import Effect (Effect)
+import Effect.Random (randomInt)
 
 import Data.Int (fromNumber, toNumber)
 import Data.Maybe (fromJust)
@@ -49,7 +49,7 @@ lcgNext :: Seed -> Seed
 lcgNext = lcgPerturb (toNumber lcgC)
 
 -- | Create a random seed
-randomSeed :: forall e. Eff (random :: RANDOM | e) Seed
+randomSeed :: Effect Seed
 randomSeed = mkSeed <$> randomInt seedMin seedMax
 
 -- | The minimum permissible Seed value.

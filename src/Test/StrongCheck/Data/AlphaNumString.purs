@@ -2,7 +2,7 @@ module Test.StrongCheck.Data.AlphaNumString where
 
 import Prelude
 
-import Data.String as S
+import Data.String.CodeUnits as S
 
 import Test.StrongCheck.Arbitrary (class Arbitrary, class Coarbitrary, coarbitrary)
 import Test.StrongCheck.Gen (arrayOf, oneOf)

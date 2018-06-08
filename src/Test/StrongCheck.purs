@@ -1,6 +1,5 @@
 module Test.StrongCheck
-  ( SC(..)
-  , Result(..)
+  ( Result(..)
   , class Testable, test
   , quickCheck
   , quickCheck'
@@ -20,21 +19,18 @@ module Test.StrongCheck
 
 import Prelude
 
-import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.Console (CONSOLE, log)
-import Control.Monad.Eff.Exception (EXCEPTION, throwException, error)
-import Control.Monad.Eff.Random (RANDOM)
+import Effect (Effect)
+import Effect.Console (log)
+import Effect.Exception (throwException, error)
 import Control.Monad.Free (Free)
 import Control.Monad.Trampoline (runTrampoline)
 
 import Data.Array as A
 import Data.Foldable (class Foldable)
 import Data.Int as Int
-import Data.Lazy (Lazy)
 import Data.List (List(..), length)
 import Data.List as List
 import Data.Maybe (maybe)
-import Data.Monoid (class Monoid)
 import Data.Tuple (Tuple(..))
 
 import Math as Math
@@ -45,9 +41,6 @@ import Test.StrongCheck.LCG (Seed, randomSeed, runSeed)
 
 import Test.StrongCheck.Arbitrary (class Arbitrary, arbitrary, class Coarbitrary, coarbitrary) as Exports
 import Test.StrongCheck.LCG (Seed, mkSeed) as Exports
-
--- | A type synonym for StrongCheck effects in Eff.
-type SC eff a = Eff (console :: CONSOLE, random :: RANDOM, exception :: EXCEPTION | eff) a
 
 -- | The result of a property test.
 data Result = Success | Failed String
@@ -82,21 +75,21 @@ instance testableResult :: Testable Result where
 instance testableFunction :: (Arbitrary t, Testable prop) => Testable (t -> prop) where
   test f = test <<< f =<< arbitrary
 
-instance testableGen :: Testable prop => Testable (GenT (Free Lazy) prop) where
-  test = flip bind test
+instance testableGen :: Testable prop => Testable (GenT (Free (Function Unit)) prop) where
+  test = (_ >>= test)
 
 -- | Checks the proposition for 100 random values.
-quickCheck :: forall eff prop. Testable prop => prop -> SC eff Unit
+quickCheck :: forall prop. Testable prop => prop -> Effect Unit
 quickCheck prop = quickCheck' 100 prop
 
 -- | Checks the proposition for the specified number of random values.
-quickCheck' :: forall eff prop. Testable prop => Int -> prop -> SC eff Unit
+quickCheck' :: forall prop. Testable prop => Int -> prop -> Effect Unit
 quickCheck' n prop = do
   seed <- randomSeed
   quickCheckWithSeed seed n prop
 
 -- | Checks the proposition for the specified number of random values, starting with a specific seed.
-quickCheckWithSeed :: forall eff prop. Testable prop => Seed -> Int -> prop -> SC eff Unit
+quickCheckWithSeed :: forall prop. Testable prop => Seed -> Int -> prop -> Effect Unit
 quickCheckWithSeed seed n prop = check (quickCheckPure n seed) prop
 
 -- | Checks the proposition for the specified number of random values in a pure
@@ -106,7 +99,7 @@ quickCheckPure n s prop = runTrampoline $ sample' n (defState s) (decorateSeed (
 
 -- | Exhaustively checks the proposition for all possible values. Assumes the
 -- | generator is a finite generator.
-smallCheck :: forall eff prop. Testable prop => prop -> SC eff Unit
+smallCheck :: forall prop. Testable prop => prop -> Effect Unit
 smallCheck prop = do
   seed <- randomSeed
   check (smallCheckPure seed) prop
@@ -119,7 +112,7 @@ smallCheckPure s prop = runTrampoline $ collectAll (defState s) (decorateSeed (t
 
 -- | Checks that the proposition has a certain probability of being true for
 -- | arbitrary values.
-statCheck :: forall eff prop. Testable prop => Number -> prop -> SC eff Unit
+statCheck :: forall prop. Testable prop => Number -> prop -> Effect Unit
 statCheck freq prop = do
   seed <- randomSeed
   log <<< show $ statCheckPure seed freq prop
@@ -165,17 +158,17 @@ statCheckPure s freq prop = try 100
 defState :: Seed -> GenState
 defState s = (GenState {seed: s, size: 10})
 
-check :: forall eff prop f. Testable prop => Foldable f => (prop -> f (Tuple Seed Result)) -> prop -> SC eff Unit
+check :: forall prop f. Testable prop => Foldable f => (prop -> f (Tuple Seed Result)) -> prop -> Effect Unit
 check f prop = do
   let results = f prop
   let successes = countSuccesses results
   log $ show successes <> "/" <> show (length $ List.fromFoldable results) <> " test(s) passed."
   throwOnFirstFailure 1 results
 
-throwOnFirstFailure :: forall eff f. Foldable f => Int -> f (Tuple Seed Result) -> SC eff Unit
+throwOnFirstFailure :: forall f. Foldable f => Int -> f (Tuple Seed Result) -> Effect Unit
 throwOnFirstFailure n fr = throwOnFirstFailure' n (List.fromFoldable fr)
   where
-  throwOnFirstFailure' :: Int -> List (Tuple Seed Result) -> SC eff Unit
+  throwOnFirstFailure' :: Int -> List (Tuple Seed Result) -> Effect Unit
   throwOnFirstFailure' _ Nil = pure unit
   throwOnFirstFailure' n' (Cons (Tuple seed (Failed msg)) _) = throwException $ error $ "Test " <> show n' <> " (seed " <> show (runSeed seed) <> ") failed: \n" <> msg
   throwOnFirstFailure' n' (Cons _ rest) = throwOnFirstFailure (n' + 1) rest
@@ -188,7 +181,7 @@ countSuccesses fa = countSuccesses' 0 (List.fromFoldable fa)
   countSuccesses' acc (Cons _ rest) = countSuccesses' acc rest
 
 -- | Checks that the specified proposition holds. Useful for unit tests.
-assert :: forall eff prop. Testable prop => prop -> SC eff Unit
+assert :: forall prop. Testable prop => prop -> Effect Unit
 assert = quickCheck' 1
 
 -- | Converts a `Boolean` into a `Result` by lifting a message into `Failed`

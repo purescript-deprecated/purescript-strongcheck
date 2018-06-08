@@ -43,5 +43,3 @@ instance euclideanRingApproxNumber :: EuclideanRing ApproxNumber where
   degree (ApproxNumber x) = degree x
   div (ApproxNumber x) (ApproxNumber y) = ApproxNumber (x / y)
   mod (ApproxNumber x) (ApproxNumber y) = ApproxNumber (x `mod` y)
-
-instance fieldApproxNumber :: Field ApproxNumber

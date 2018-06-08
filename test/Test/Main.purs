@@ -2,7 +2,6 @@ module Test.Main where
 
 import Prelude
 
-import Control.Monad.Eff.Console (log)
 import Control.Monad.Trampoline (runTrampoline)
 
 import Data.Array as Array
@@ -12,6 +11,8 @@ import Data.List as List
 import Data.Maybe (Maybe(..), maybe, isJust)
 import Data.Monoid (mempty)
 import Data.Tuple (Tuple(..))
+
+import Effect.Console (log)
 
 import Math as Math
 
