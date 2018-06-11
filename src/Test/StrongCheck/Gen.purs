@@ -59,36 +59,31 @@ import Prelude
 import Control.Alt (class Alt, (<|>))
 import Control.Alternative (class Alternative)
 import Control.Lazy as CL
-import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.Console (logShow, CONSOLE)
-import Control.Monad.List.Trans as ListT
-import Control.Monad.Trampoline (runTrampoline, Trampoline)
 import Control.Monad.Gen as CMG
+import Control.Monad.List.Trans as ListT
 import Control.Monad.Rec.Class (class MonadRec, Step(..), tailRecM)
+import Control.Monad.Trampoline (runTrampoline, Trampoline)
 import Control.MonadPlus (class MonadPlus)
 import Control.MonadZero (class MonadZero)
 import Control.Plus (class Plus)
-
 import Data.Array as A
 import Data.Array.Partial as AP
-import Data.Char (fromCharCode)
+import Data.Char.Gen (genUnicodeChar)
 import Data.Foldable (fold)
 import Data.Int (toNumber)
 import Data.Lazy (Lazy, defer)
 import Data.List as L
 import Data.Machine.Mealy as Mealy
 import Data.Maybe (fromMaybe, maybe, Maybe(..), fromJust)
-import Data.Monoid (mempty, class Monoid)
 import Data.Monoid.Additive (Additive(..))
 import Data.Newtype (unwrap)
-import Data.Profunctor (arr, lmap)
+import Data.Profunctor (arr, lcmap)
 import Data.Profunctor.Strong ((&&&))
 import Data.Tuple (Tuple(..), snd, fst)
-
+import Effect (Effect)
+import Effect.Console (logShow)
 import Math as M
-
 import Partial.Unsafe (unsafePartial)
-
 import Test.StrongCheck.LCG (Seed, mkSeed, runSeed, lcgPerturb, lcgNext, lcgN)
 
 type Size = Int
@@ -162,11 +157,11 @@ repeatable f = g <$> repeatable' f
 
 -- | Creates a generator that depends on access to the generator state.
 stateful :: forall f a. Monad f => (GenState -> GenT f a) -> GenT f a
-stateful f = GenT $ unGen <<< f =<< Mealy.take 1 id
+stateful f = GenT $ unGen <<< f =<< Mealy.take 1 identity
 
 -- | Fixes a generator on a certain variant, given by the specified seed.
 variant :: forall f a. Monad f => Seed -> GenT f a -> GenT f a
-variant n g = GenT $ lmap (stateM (\s -> s { seed = n })) (unGen g)
+variant n g = GenT $ lcmap (stateM (\s -> s { seed = n })) (unGen g)
 
 -- | Creates a generator that depends on the size parameter.
 sized :: forall f a. Monad f => (Size -> GenT f a) -> GenT f a
@@ -175,11 +170,11 @@ sized f = stateful \s -> f (unGenState s).size
 -- | Resizes the generator so the size parameter passed into the generator
 -- | will be equal to the specified size.
 resize :: forall f a. Monad f => Size -> GenT f a -> GenT f a
-resize sz g = GenT $ lmap (stateM (\s -> s { size = sz })) (unGen g)
+resize sz g = GenT $ lcmap (stateM (\s -> s { size = sz })) (unGen g)
 
 -- | A generator for characters.
 charGen :: forall f. Monad f => GenT f Char
-charGen = fromCharCode <$> chooseInt 0 65535
+charGen = genUnicodeChar
 
 -- | Creates a generator that generates real numbers between the specified
 -- | inclusive range.
@@ -259,13 +254,13 @@ foreign import float32ToInt32 :: Number -> Int
 
 perturbGen :: forall f a. Monad f => Number -> GenT f a -> GenT f a
 perturbGen n (GenT m) =
-  GenT $ lmap (stateM (\s -> s { seed = lcgPerturb (toNumber (float32ToInt32 n)) s.seed })) m
+  GenT $ lcmap (stateM (\s -> s { seed = lcgPerturb (toNumber (float32ToInt32 n)) s.seed })) m
 
 updateSeedState :: GenState -> GenState
 updateSeedState (GenState s) = GenState { seed: lcgNext s.seed, size: s.size }
 
 updateSeedGen :: forall f a. Monad f => GenT f a -> GenT f a
-updateSeedGen (GenT m) = GenT $ lmap updateSeedState m
+updateSeedGen (GenT m) = GenT $ lcmap updateSeedState m
 
 liftMealy
   :: forall f a
@@ -467,15 +462,15 @@ sample n = sample' n (GenState { size: 10, seed: mkSeed 445645874 })
 
 -- | Shows a sample of values generated from the specified generator.
 showSample'
-  :: forall r a
+  :: forall a
    . Show a
   => Int
   -> Gen a
-  -> Eff (console :: CONSOLE | r) Unit
+  -> Effect Unit
 showSample' n g = logShow $ runTrampoline $ sample n g
 
 -- | Shows a sample of values generated from the specified generator.
-showSample :: forall r a. Show a => Gen a -> Eff (console :: CONSOLE | r) Unit
+showSample :: forall a. Show a => Gen a -> Effect Unit
 showSample = showSample' 10
 
 -- | Runs a generator to produce a specified number of values, returning both
@@ -503,7 +498,7 @@ chunked n g = transGen f [] (extend n g)
 
 -- | Wraps an effect in a generator that ignores the input state.
 wrapEffect :: forall f a. Monad f => f a -> GenT f a
-wrapEffect fa = GenT $ g <$> (id &&& (Mealy.wrapEffect fa))
+wrapEffect fa = GenT $ g <$> (identity &&& (Mealy.wrapEffect fa))
   where
   g (Tuple l r) = GenOut { state: l, value: r }
 

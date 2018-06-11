@@ -28,18 +28,15 @@ import Data.Functor.Invariant (class Invariant)
 import Data.Int (fromNumber, toNumber)
 import Data.List as L
 import Data.Maybe (fromMaybe)
-import Data.Monoid (mempty)
 import Data.Newtype (unwrap)
-import Data.String as S
+import Data.String.CodeUnits as SCU
 import Data.Traversable (sequence)
 import Data.Tuple (Tuple(..))
-
+import Math as Math
 import Test.StrongCheck.Arbitrary (arbitrary)
 import Test.StrongCheck.Data.ArbBoundedEnum (ArbBoundedEnum(..), runArbBoundedEnum)
 import Test.StrongCheck.Data.Signum (runSignum)
 import Test.StrongCheck.Gen (Gen, uniform, elements, chunked, takeGen)
-
-import Math as Math
 
 newtype Attempts = Attempts Int
 
@@ -258,9 +255,9 @@ instance perturbBoolean :: Perturb Boolean where
 instance perturbString :: Perturb String where
   perturber = Perturber { perturb: perturb', dist: dist', dims: dims' }
     where
-    perturb' d s = (S.fromCharArray <<< A.fromFoldable) <$> perturb d (L.fromFoldable (S.toCharArray s))
-    dist' s1 s2 = dist (L.fromFoldable $ S.toCharArray s1) (L.fromFoldable $ S.toCharArray s2)
-    dims' = dims <<< L.fromFoldable <<< S.toCharArray
+    perturb' d s = (SCU.fromCharArray <<< A.fromFoldable) <$> perturb d (L.fromFoldable (SCU.toCharArray s))
+    dist' s1 s2 = dist (L.fromFoldable $ SCU.toCharArray s1) (L.fromFoldable $ SCU.toCharArray s2)
+    dims' = dims <<< L.fromFoldable <<< SCU.toCharArray
 
 -- magical constants
 maxNumber :: Number
