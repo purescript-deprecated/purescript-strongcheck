@@ -39,6 +39,9 @@ instance ringApproxNumber :: Ring ApproxNumber where
 
 instance commutativeRingApproxNumber :: CommutativeRing ApproxNumber
 
+instance divisionRingApproxNumber :: DivisionRing ApproxNumber where
+  recip (ApproxNumber x) = ApproxNumber (1.0 / x)
+
 instance euclideanRingApproxNumber :: EuclideanRing ApproxNumber where
   degree (ApproxNumber x) = degree x
   div (ApproxNumber x) (ApproxNumber y) = ApproxNumber (x / y)
