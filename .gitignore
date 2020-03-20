@@ -2,6 +2,16 @@
 !/.gitignore
 !/.github
 !/.travis.yml
-/bower_components/
-/node_modules/
-/output/
+
+# Dependencies
+bower_components
+node_modules
+
+# Generated files
+output
+dce-output
+generated-docs
+
+# Lockfiles
+package-lock.json
+*.lock
