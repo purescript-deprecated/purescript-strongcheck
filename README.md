@@ -1,23 +1,5 @@
-# purescript-strongcheck
+# DEPRECATED
 
-[![Latest release](http://img.shields.io/github/release/purescript-contrib/purescript-strongcheck.svg)](https://github.com/purescript-contrib/purescript-strongcheck/releases)
-[![Build status](https://travis-ci.org/purescript-contrib/purescript-strongcheck.svg?branch=master)](https://travis-ci.org/purescript-contrib/purescript-strongcheck)
-[![Pursuit](http://pursuit.purescript.org/packages/purescript-strongcheck/badge)](http://pursuit.purescript.org/packages/purescript-strongcheck/)
-[![Maintainer: garyb](https://img.shields.io/badge/maintainer-garyb-lightgrey.svg)](http://github.com/garyb)
-[![Maintainer: thomashoneyman](https://img.shields.io/badge/maintainer-thomashoneyman-lightgrey.svg)](http://github.com/thomashoneyman)
+StrongCheck has been deprecated because [QuickCheck](https://github.com/purescript/purescript-quickcheck) is now stack safe, which was the major reason to use StrongCheck. Since that's no longer an advantage and StrongCheck is significantly slower than QuickCheck, there's not much reason to keep this library around vs. putting all efforts into QuickCheck as the standard.
 
-A version of [QuickCheck](https://github.com/purescript/purescript-quickcheck) with additional features such as exhaustive and statistical checking.
-
-## Installation
-
-```shell
-bower install purescript-strongcheck
-```
-
-## Documentation
-
-Module documentation is [published on Pursuit](http://pursuit.purescript.org/packages/purescript-strongcheck).
-
-## Contributing
-
-Read the [contribution guidelines](https://github.com/purescript-contrib/purescript-strongcheck/blob/master/.github/contributing.md) to get started and see helpful related resources.
+You can see the full [discussion on Discourse](https://discourse.purescript.org/t/proposed-purescript-contrib-library-deprecations) for more details. Previous releases continue to work.
