@@ -5,9 +5,10 @@
     "John A. De Goes <john@degoes.net> (http://degoes.net)",
     "Phil Freeman <freeman.phil@gmail.com>"
   ],
+  "keywords": ["pursuit-deprecated"],
   "repository": {
     "type": "git",
-    "url": "git://github.com/purescript-contrib/purescript-strongcheck.git"
+    "url": "https://github.com/purescript-contrib/purescript-strongcheck.git"
   },
   "ignore": [
     "**/.*",
